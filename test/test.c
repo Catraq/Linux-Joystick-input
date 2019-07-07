@@ -17,7 +17,6 @@ int main(int args, char *argv[])
 	}	
 	
 	const char *device_path = argv[1];
-	const uint32_t refresh_interval_ms = 10;
 	result = joystick_ps3_intialize(&ps3, device_path);
 	if(result < 0){
 		/* Error */	
