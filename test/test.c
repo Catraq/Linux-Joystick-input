@@ -19,6 +19,8 @@ int main(int args, char *argv[])
 	const char *device_path = argv[1];
 	result = joystick_ps3_intialize(&ps3, device_path);
 	if(result < 0){
+		fprintf(stderr, "joystick_ps3_intialize(): error \n");
+		exit(EXIT_FAILURE);
 		/* Error */	
 	}
 

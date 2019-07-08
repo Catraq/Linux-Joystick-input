@@ -26,7 +26,6 @@ void *joystick_input_thread(void *args)
 				ioctl(fd, JSIOCGAXES, &axis_count);
 				ioctl(fd, JSIOCGBUTTONS, &button_count);
 				ioctl(fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name);
-				fprintf(stdout, "Name=%s \n", name);
 				config->device_fd = fd;
 				result = 0;
 			}
@@ -113,28 +112,49 @@ int joystick_ps3_intialize(struct joystick_ps3_context *context, const char *dev
 	ioctl(context->device_fd, JSIOCGBUTTONS, &button_count);
 	ioctl(context->device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name);
 	
-	fprintf(stdout, "Name=%s \n", name);
+	if(axis_count != JOYSTICK_PS3_AXIS_LENGTH){
+		fprintf(stderr, "Error: device have %u axises but a PS3 controller should have %u. \n", (uint32_t)axis_count, (uint32_t)JOYSTICK_PS3_AXIS_LENGTH);
+		goto exit;	
+	}	
+
+	
+	if(button_count != JOYSTICK_PS3_BUTTON_LENGTH){
+		fprintf(stderr, "Error: device have %u axises but a PS3 controller should have %u. \n", (uint32_t)axis_count, (uint32_t)JOYSTICK_PS3_AXIS_LENGTH);
+		goto exit;	
+	}	
+
+
 
 	result = pthread_cond_init(&context->condition, NULL);
 	if(result < 0){
 		perror("pthread_cond_init()");
-		return -1;	
+		goto exit;
 	}
 	
 	result = pthread_mutex_init(&context->mutex, NULL);
 	if(result < 0){
+		/* Dont care about error */
+		pthread_cond_destroy(&context->condition);
 		perror("pthread_mutex_init()");
-		return -1;	
+		goto exit;	
 	}
 
 	result = pthread_create(&context->thread, NULL, joystick_input_thread, (void*)context);
 	if(result < 0){
 	
+		pthread_cond_destroy(&context->condition);
+		pthread_mutex_destroy(&context->mutex);
+
 		perror("pthread_create()");
-		return -1;	
-	}	
+		goto exit;	
+	}
+	fprintf(stdout, "%s \n", name);	
 
 	return 0;
+
+exit:
+	close(context->device_fd);
+	return -1;
 }
 
 
@@ -160,6 +180,8 @@ int joystick_ps3_destroy(struct joystick_ps3_context *context)
 		perror("pthread_mutex_destroy()");
 		return -1;	
 	}
+
+	close(context->device_fd);
 
 
 	return 0;
