@@ -119,7 +119,7 @@ int joystick_ps3_intialize(struct joystick_ps3_context *context, const char *dev
 
 	
 	if(button_count != JOYSTICK_PS3_BUTTON_LENGTH){
-		fprintf(stderr, "Error: device have %u axises but a PS3 controller should have %u. \n", (uint32_t)axis_count, (uint32_t)JOYSTICK_PS3_AXIS_LENGTH);
+		fprintf(stderr, "Error: device have %u buttons but a PS3 controller should have %u. \n", (uint32_t)button_count, (uint32_t)JOYSTICK_PS3_BUTTON_LENGTH);
 		goto exit;	
 	}	
 

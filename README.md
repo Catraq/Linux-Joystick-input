@@ -36,3 +36,9 @@ Quick start.
 
 
 See test/test.c for example.  
+
+	mkdir build
+	cd build
+	cmake ..
+	make 
+	./test /dev/input/js0 
