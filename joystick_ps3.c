@@ -2,11 +2,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include <time.h>
+
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <string.h>
+#include <pthread.h>
+
 
 
 void *joystick_input_thread(void *args)
@@ -74,54 +79,89 @@ void *joystick_input_thread(void *args)
 	pthread_exit(NULL);
 }
 
-int joystick_ps3_input(struct joystick_ps3_context *context, struct joystick_ps3 *input, struct timespec *timeout)
+int joystick_ps3_input(struct joystick_ps3_context *context, struct joystick_ps3 *input, uint32_t timeout_usec)
 {
+	int result = 1;
 
 	pthread_mutex_lock(&context->mutex);
-	int result = pthread_cond_timedwait(&context->condition, &context->mutex, timeout);
-	if(result < 0){
-		perror("pthread_cond_timewait()");
+	memcpy(input, &context->input, sizeof (struct joystick_ps3));
+
+	if(timeout_usec != 0)
+	{
+
+		/* Using absolue time */
+		struct timeval time;
+		gettimeofday(&time, NULL);
+
+		struct timespec out = {
+			.tv_sec = timeout_usec/(1000 * 1000),
+			.tv_nsec = (long)timeout_usec * 1000
+		};
+
+		/* Wait for read thread */
+		int result = pthread_cond_timedwait(&context->condition, &context->mutex, &out);
+		if(errno == ETIMEDOUT){
+			/* Have copied the data earlier in code */
+			result = 0;	
+		}else if(result < 0){
+			perror("pthread_cond_timewait()");
+			result = -1;
+		}else{
+			/* Copy most recent */
+			memcpy(input, &context->input, sizeof (struct joystick_ps3));
+			result = 1;
+		}
 	}
-	memcpy(input, &context->input, sizeof(struct joystick_ps3));
+
 	pthread_mutex_unlock(&context->mutex);
+	
 	return result;
 }
 
 
 
 
-int joystick_ps3_intialize(struct joystick_ps3_context *context, const char *device_path)
+int joystick_ps3_initialize(struct joystick_ps3_context *context, const char *device_path, int device_must_exist)
 {
 	int result = 0;
 
 	uint8_t axis_count, button_count;
 	int8_t name[JOYSTICK_NAME_LENGTH];
 
-	//const char expected_name[] = "PS3";
+	const char expected_name[] = "PS3";
 	
 	context->thread_state = 1;
-	context->device_fd = open(device_path, O_RDONLY);
 	context->device_path = device_path;
-
+	context->device_fd = -1;
+	
+	context->device_fd = open(device_path, O_RDONLY);
+	
+	int device_found = 0;
 	if(context->device_fd < 0){
-		perror("open()");			
+		fprintf(stdout, "PS3 Joystick: Could not open device %s. \n", device_path);
+	}else{
+
+		ioctl(context->device_fd, JSIOCGAXES, &axis_count);
+		ioctl(context->device_fd, JSIOCGBUTTONS, &button_count);
+		ioctl(context->device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name);
+		
+		if(axis_count != JOYSTICK_PS3_AXIS_LENGTH){
+			fprintf(stderr, "Error: device have %u axises but a PS3 controller should have %u. \n", (uint32_t)axis_count, (uint32_t)JOYSTICK_PS3_AXIS_LENGTH);
+			goto exit;	
+		}	
+
+		
+		if(button_count != JOYSTICK_PS3_BUTTON_LENGTH){
+			fprintf(stderr, "Error: device have %u buttons but a PS3 controller should have %u. \n", (uint32_t)button_count, (uint32_t)JOYSTICK_PS3_BUTTON_LENGTH);
+			goto exit;	
+		}
+
+		device_found = 1;
+	}	
+
+	if(device_found == 0 && device_must_exist == 1){
 		return -1;	
 	}
-
-	ioctl(context->device_fd, JSIOCGAXES, &axis_count);
-	ioctl(context->device_fd, JSIOCGBUTTONS, &button_count);
-	ioctl(context->device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name);
-	
-	if(axis_count != JOYSTICK_PS3_AXIS_LENGTH){
-		fprintf(stderr, "Error: device have %u axises but a PS3 controller should have %u. \n", (uint32_t)axis_count, (uint32_t)JOYSTICK_PS3_AXIS_LENGTH);
-		goto exit;	
-	}	
-
-	
-	if(button_count != JOYSTICK_PS3_BUTTON_LENGTH){
-		fprintf(stderr, "Error: device have %u buttons but a PS3 controller should have %u. \n", (uint32_t)button_count, (uint32_t)JOYSTICK_PS3_BUTTON_LENGTH);
-		goto exit;	
-	}	
 
 
 
@@ -133,7 +173,6 @@ int joystick_ps3_intialize(struct joystick_ps3_context *context, const char *dev
 	
 	result = pthread_mutex_init(&context->mutex, NULL);
 	if(result < 0){
-		/* Dont care about error */
 		pthread_cond_destroy(&context->condition);
 		perror("pthread_mutex_init()");
 		goto exit;	
