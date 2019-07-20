@@ -17,7 +17,7 @@ int main(int args, char *argv[])
 	}	
 	
 	const char *device_path = argv[1];
-	result = joystick_ps3_intialize(&ps3, device_path);
+	result = joystick_ps3_initialize(&ps3, device_path, 0);
 	if(result < 0){
 		fprintf(stderr, "joystick_ps3_intialize(): error \n");
 		exit(EXIT_FAILURE);
@@ -28,21 +28,17 @@ int main(int args, char *argv[])
 	while(1)
 	{
 		struct joystick_ps3 input;
-
-		struct timeval time;	
-		gettimeofday(&time, NULL);
 		
-		/* 1 ms timeout */
-		struct timespec timeout = 
-		{
-			.tv_sec = time.tv_sec,
-			.tv_nsec = (long)time.tv_usec * 1000 + (long)1000*1000
-		};
+		clock_t time = clock();
 
-		result = joystick_ps3_input(&ps3, &input, &timeout);
+		const uint32_t usec = 0;
+		result = joystick_ps3_input(&ps3, &input, usec);
 		if(result < 0){
 			printf("joystick_ps3_input(): error \n");
 		}
+
+		float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
+		printf("DT: %f :", dt);
 
 		struct timespec loop_sleep = {
 			.tv_sec = 0,
