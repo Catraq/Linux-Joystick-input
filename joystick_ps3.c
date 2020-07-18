@@ -84,8 +84,11 @@ int joystick_ps3_input(struct joystick_ps3_context *context, struct joystick_ps3
 	int result = 1;
 
 	pthread_mutex_lock(&context->mutex);
+
+	/* Grab latest data */
 	memcpy(input, &context->input, sizeof (struct joystick_ps3));
 
+	/* Timeout for most recent data */
 	if(timeout_usec != 0)
 	{
 
@@ -124,6 +127,9 @@ int joystick_ps3_input(struct joystick_ps3_context *context, struct joystick_ps3
 int joystick_ps3_initialize(struct joystick_ps3_context *context, const char *device_path, int device_must_exist)
 {
 	int result = 0;
+		
+
+	memset(context, 0, sizeof(struct joystick_ps3_context));
 
 	uint8_t axis_count, button_count;
 	int8_t name[JOYSTICK_NAME_LENGTH];
