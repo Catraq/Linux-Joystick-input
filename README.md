@@ -9,24 +9,16 @@ Quick start.
     #include "joystick_ps3.h"
 
     ....
+    int device_have_to_exist = 1;
     struct joystick_ps3_context ps3;
-    result = joystick_ps3_intialize(&ps3, device_path);
+    result = joystick_ps3_intialize(&ps3, device_path, device_have_to_exist);
     if(result < 0) /* Error */
     ....
 
     ....
-    struct timeval time;
-    gettimeofday(&time, NULL);
-
-    /* 1 ms timeout */
-    struct timespec timeout =
-    {
-    	.tv_sec = time.tv_sec,
-    	.tv_nsec = (long)time.tv_usec * 1000 + (long)1000*1000
-    };
-
+    const uint32_t usec_timeout = 10;
     struct joystick_ps3 input;
-    result = joystick_ps3_input(&ps3, &input, &timeout);
+    result = joystick_ps3_input(&ps3, &input, usec_timeout);
     if(result < 0) /* Error */
     ....
 
