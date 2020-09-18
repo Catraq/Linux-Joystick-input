@@ -52,7 +52,7 @@ static int joystick_ps3_open(const char *device_path, int verbose)
 		goto exit;
 	}
 	
-	
+#if 0	
 	if(axis_count != JOYSTICK_PS3_AXIS_LENGTH){
 		
 		if(verbose)
@@ -67,6 +67,7 @@ static int joystick_ps3_open(const char *device_path, int verbose)
 			fprintf(stderr, "Error: device have %u buttons but a PS3 controller should have %u. \n", (uint32_t)button_count, (uint32_t)JOYSTICK_PS3_BUTTON_LENGTH);
 		goto exit;	
 	}
+#endif 
 
 	return device_fd;
 	
