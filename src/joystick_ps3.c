@@ -51,23 +51,6 @@ static int joystick_ps3_open(const char *device_path, int verbose)
 			perror("PS3 Joystick:ioctl(JOYSTICK_NAME_LENGTH)");
 		goto exit;
 	}
-	
-#if 0	
-	if(axis_count != JOYSTICK_PS3_AXIS_LENGTH){
-		
-		if(verbose)
-			fprintf(stderr, "Error: device have %u axises but a PS3 controller should have %u. \n", (uint32_t)axis_count, (uint32_t)JOYSTICK_PS3_AXIS_LENGTH);
-		goto exit;	
-	}	
-
-	
-	if(button_count != JOYSTICK_PS3_BUTTON_LENGTH){
-		
-		if(verbose)
-			fprintf(stderr, "Error: device have %u buttons but a PS3 controller should have %u. \n", (uint32_t)button_count, (uint32_t)JOYSTICK_PS3_BUTTON_LENGTH);
-		goto exit;	
-	}
-#endif 
 
 	return device_fd;
 	
@@ -102,10 +85,11 @@ static void *joystick_input_thread(void *args)
 			
 			memset(&input, 0, sizeof input);
 			
-			while((result = read(context->device_fd, &event, sizeof(event))) > 0 && context->thread_state)
+			ssize_t bytes_read = 0;			
+			while((bytes_read= read(context->device_fd, &event, sizeof(event))) > 0 && context->thread_state)
 			{
 			
-				if(result == sizeof(event))
+				if(bytes_read == (ssize_t)sizeof(event))
 				{
 					
 					/* Read event */
