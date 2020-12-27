@@ -10,13 +10,17 @@
 #include <unistd.h>
 #include <dirent.h>
 
-#include <linux/limits.h>
 #include <sys/types.h>
 
 
 #include <pthread.h>
 
 #include "joystick_ps3.h"
+
+/* Write log to file */
+#define LOG_TAG "JOYSTICK"
+#define LOG_FD stderr
+#include "li_log.h"
 
 size_t joystick_identify_by_requirement(struct joystick_input_requirement *input_requirement,
 	       	struct joystick_input_attrib *input_attrib,
@@ -32,12 +36,19 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 	 * Open directroy with joystick devices. 
 	 */
 
-	struct dirent *dirent 	= NULL;
+	struct dirent *dirent = NULL;
 	const char *dev_path = "/dev/input/";
+
+	LOGI("Finding joysticks in %s with requirements(", dev_path);
+	LOG_MSG("axis count=%lu, ", (long unsigned int)input_requirement->joystick_axis_count);
+	LOG_MSG("button count=%lu) \n", (long unsigned int)input_requirement->joystick_button_count);
+
+
+
 	DIR *dir = opendir(dev_path);
 
 	if(dir == NULL){
-		fprintf(stderr, "Joystick: Could not open directory %s. Error: %s ", dev_path, strerror(errno));
+		LOGE("Could not open directory %s. Error: %s ", dev_path, strerror(errno));
 		return 0;
 	}
 
@@ -86,10 +97,7 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 
 			full_file_path[filename_last_index] = 0;
 			
-			/* Try to open as joystick and Retrive attributes */
-			fprintf(stderr, "Trying to open: %s \n", full_file_path);
-
-			int verbose = 1;
+			int verbose = 0;
 			struct joystick_input_attrib curr_input_attrib;
 			int joystick_device_fd = joystick_open(full_file_path, &curr_input_attrib, verbose);
 			if(joystick_device_fd < 0)
@@ -106,6 +114,11 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 				/* 
 				 * If it matches the requirements 
 				 */
+				
+				LOGI("Name=%s, ", curr_input_attrib.joystick_name);
+				LOG_MSG("axis count=%lu, ", (long unsigned int)curr_input_attrib.joystick_axis_count);
+				LOG_MSG("button count=%lu \n", (long unsigned int)curr_input_attrib.joystick_button_count);
+
 
 				if((input_requirement->joystick_axis_count <= curr_input_attrib.joystick_axis_count) &&
 					       (input_requirement->joystick_button_count <= curr_input_attrib.joystick_axis_count))
@@ -123,7 +136,6 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 					/* 
 					 * Quit if the array is full. 
 					 */
-
 					joystick_device_found_index = joystick_device_found_index + 1;
 					if(joystick_device_found_index == input_attrib_max){
 						break;	
@@ -132,15 +144,11 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 				}
 
 			}
-		
-		}else
-		{
-			/* CANT HAPPEN! Write some log error.  */	
 		}
-
 	}
 
 	closedir(dir);
+	LOGI("Found %li devices satsifying the requirements. \n", joystick_device_found_index);
 
 	return joystick_device_found_index;
 }

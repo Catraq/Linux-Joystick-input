@@ -14,6 +14,10 @@ extern "C"{
 
 #define JOYSTICK_NAME_LENGTH 128
 
+#ifdef JOYSTICK_LOG_FD
+extern int joystick_log_fd;
+#endif 
+
 enum joystick_ps3_button 
 {
 	JOYSTICK_PS3_BUTTON_CROSS = 0,

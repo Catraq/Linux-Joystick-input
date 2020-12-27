@@ -36,14 +36,6 @@ int main(int args, char *argv[])
 	int result = 0;
 	const char *joystick_device_path = NULL;
 
-	
-
-	if(args < 2){
-		fprintf(stdout, "Usage: %s ps3-dev-path \n", argv[0]);
-		return -1;
-	}
-	
-
 	/* 
 	 * No joystick path passed from command line
 	 */
@@ -56,12 +48,19 @@ int main(int args, char *argv[])
 		
 		size_t number_of_joysticks = joystick_identify_by_requirement(&joystick_input_req, input_attrib_list, input_attrib_list_count);
 		if(number_of_joysticks == 0){
-			fprintf(stderr, "Could not find any joystick with \n");		
+			fprintf(stderr, "Could not find any joystick device \nExiting \n");		
 			exit(EXIT_FAILURE);
 		}
 
 		joystick_device_path = input_attrib_list[0].joystick_device_path;
 
+	}
+
+	
+
+	if(args < 2){
+		fprintf(stdout, "Usage: %s ps3-dev-path \n", argv[0]);
+		exit(EXIT_FAILURE);
 	}
 
 
