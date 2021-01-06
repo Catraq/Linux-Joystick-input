@@ -1,3 +1,19 @@
+/*TODO:
+ *	- Different errors depending on error. Etc disconnected or out of memory. 
+ */
+
+
+/*
+ * Decription:
+ * 	Used for finding joystick devices satisfying certain requirements.
+ * 	Open and read the joystick device. 
+ * Notes
+ *	- Uninitialized means that the structure/data is zeroed out using etc. memset. 
+ * Error 
+ * 	If malloc fails. 
+ * 	Assert on logical error. 
+ */
+
 #ifndef JOYSTICK_H_
 #define JOYSTICK_H_
 
@@ -47,13 +63,31 @@ struct joystick_context
 	struct joystick_input_attrib input_attrib;
 };
 
+
+void joystick_input_attrib_print(struct joystick_input_attrib *input_attrib, FILE *out);
+
 uint32_t joystick_axis_count(struct joystick_context *context);
+
+/* 
+ * Read joystick values. 
+ *
+ * @param context Initialized context. 
+ *
+ * @param value Where read data will be stored.  
+ *
+ * @return Returns 0 on success. -1 on failure. 
+ */
+
+int joystick_input(struct joystick_context *context, struct joystick_input_value *value);
+
 
 /* 
  * Used for identifying joystick devices that satisfys some requirements. 
  *
  * @param input_requirement have to be filled with minium requirements. 
+ *
  * @param input_attrib will be filled with the results. 
+ *
  * @param input_attrib_max maxium elements input_attrib fits. 
  *
  * @return returns 0 if no devices are found. Otherwise number of devices found. 
@@ -63,16 +97,13 @@ uint32_t joystick_axis_count(struct joystick_context *context);
 size_t joystick_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
 
 /* 
- * Initialize ps3 joystick context.  
+ * Initialize joystick context.  
  * 
- * @param context joystick ps3 context that should be initialized. 
+ * @param context joystick context that should be initialized. 
  *
- * @param device_path should be system path to ps3 controller. Usually /dev/input/js0
+ * @param device_path should be system path to ps3 controller. Usually /dev/input/*
  * 
- * @param device_must_exist 1 if device have to be present when initializing. Will fail 
- * if device is not present and device_must_exist is 1. 
- *
- * @return Returns 0 on success, -1 on failure.  
+ * @return Returns 0 on success. -1 on failure.
  */
 
 int joystick_init(struct joystick_context *context, const char *device_path);
@@ -86,34 +117,49 @@ int joystick_init(struct joystick_context *context, const char *device_path);
  */
 int joystick_destroy(struct joystick_context *context);
 
+
+
+/*  
+ *  The structure joystick_input_value is used for reading the data 
+ *  from the joystick and then mapping it to the application input 
+ *  using the functions in joystick_map.h.
+ */
+
+
+/*
+ * Create joystick input buffer. 
+ * Allocates memory for buttons and axises. 
+ *
+ * @param context Joystick context that is initialized. 
+ *
+ * @param value Pointer to uninitialized structure. The structure data have to be all 0. 
+ *
+ * @return 0 on success. -1 on failure. 
+ */
+
 int joystick_input_create(struct joystick_context *context, struct joystick_input_value *value);
-void joystick_input_clear(struct joystick_context *context, struct joystick_input_value *value);
+
+/*
+ * Create joystick input buffer. 
+ * Deallocates memory for buttons and axises. 
+ *
+ * @param value Pointer to structure that have been initialized. 
+ *
+ * @return 0 on success. -1 on failure. 
+ */
 int joystick_input_destroy(struct joystick_input_value *value);
 
-/* 
- * Open device 
+/*
+ * Clears the memory if the input buffer. 
+ *
+ * @param context Joystick context that is initialized. 
+ *
+ * @param value Pointer to a initialized structure.
+ *
+ * @return 0 on success. -1 on failure. 
  */
 
-int joystick_open(const char *joystick_device_path, struct joystick_input_attrib *input_attrib);
-
-/* 
- * Close device 
- */
-
-int joystick_close(int joystick_device_fd);
-
-
-/* 
- * Read PS3 joystick values. 
- *
- * @param context Initialized context. 
- *
- * @param value Where read data will be stored.  
- *
- * @return Returns 0 on success. -1 on failure. 
- */
-
-int joystick_input(struct joystick_context *context, struct joystick_input_value *value);
+void joystick_input_clear(struct joystick_context *context, struct joystick_input_value *value);
 
 #ifdef __cplusplus
 }

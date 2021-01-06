@@ -31,8 +31,86 @@
 
 #define JOYSTICK_EVENT_BUFFER_SIZE 128
 
+static int joystick_open(const char *device_path, struct joystick_input_attrib *input_attrib)
+{
+	assert(device_path != NULL);
+	assert(input_attrib != NULL);
+
+	uint8_t axis_count, button_count;
+	int8_t name[JOYSTICK_NAME_LENGTH];
+	int device_fd = -1;
+
+
+	device_fd = open(device_path, O_RDONLY | O_NONBLOCK);
+	if(device_fd < 0){
+		return -1;
+	}
+	
+	
+	if(ioctl(device_fd, JSIOCGAXES, &axis_count) < 0){
+		goto exit;
+	}
+	
+	if(ioctl(device_fd, JSIOCGBUTTONS, &button_count) < 0){
+		
+		goto exit;
+	}
+	
+	/* Will be null termianted */	
+	if(ioctl(device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name) < 0)
+	{
+		goto exit;
+	}
+
+	input_attrib->joystick_axis_count = axis_count;
+	input_attrib->joystick_button_count = button_count;
+
+
+	memcpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
+
+
+	return device_fd;
+	
+exit:
+	close(device_fd);
+	return -1;
+}
+
+static int joystick_close(int joystick_fd)
+{
+	close(joystick_fd);
+
+	return 0;
+}
+
+
+void joystick_input_attrib_print(struct joystick_input_attrib *input_attrib, FILE *out)
+{
+	assert(input_attrib != NULL);
+	assert(out != NULL);
+	
+
+	fprintf(out,"joystick_device_path={%s} \n", input_attrib->joystick_device_path);
+	fprintf(out,"joystick_name={%s} \n", input_attrib->joystick_name);
+	fprintf(out,"joystick_axis_count={%i} \n", (int)input_attrib->joystick_axis_count);
+	fprintf(out,"joystick_button_count={%i} \n", (int)input_attrib->joystick_button_count);
+
+
+}
+
+uint32_t joystick_axis_count(struct joystick_context *context)
+{
+	assert(context != NULL);
+
+	return context->input_attrib.joystick_axis_count;
+}
+
+
 int joystick_input(struct joystick_context *context, struct joystick_input_value *input)
 {
+	assert(context != NULL);
+	assert(input != NULL);
+
 	int result = 0;
 		
 	struct js_event js_event_buffer[JOYSTICK_EVENT_BUFFER_SIZE];
@@ -42,9 +120,10 @@ int joystick_input(struct joystick_context *context, struct joystick_input_value
 	}
 	
 	const uint32_t buffer_size_verify = result%sizeof(struct js_event); 
-	const uint32_t buffer_size = result/sizeof(struct js_event); 
 	if(buffer_size_verify == 0)
 	{
+
+		const uint32_t buffer_size = result/sizeof(struct js_event); 
 
 		const int16_t joystick_axis_count = context->input_attrib.joystick_axis_count;
 		const int16_t joystick_button_count = context->input_attrib.joystick_button_count;
@@ -81,9 +160,7 @@ int joystick_input(struct joystick_context *context, struct joystick_input_value
 }
 
 
-size_t joystick_identify_by_requirement(struct joystick_input_requirement *input_requirement,
-	       	struct joystick_input_attrib *input_attrib,
-	       	size_t input_attrib_max)
+size_t joystick_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max)
 {
 
 	assert(input_requirement != NULL);
@@ -138,12 +215,13 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 	{
 		/* 
 		 * Fill buffer with a complete path 
-		 * Last +1 is for the '0' terminator
+		 * d_name is null terminated. 
 		 */
 
 		char *filename = dirent->d_name;	
 		size_t filename_length = strlen(dev_path);
-		size_t filename_last_index = filename_length + dev_path_length + 1; 
+		size_t filename_last_index = filename_length + dev_path_length;
+
 
 		if(filename_last_index < PATH_MAX)
 		{
@@ -152,12 +230,7 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 			char *full_file_path_filename_offset = (char *)full_file_path + dev_path_length;
 			memcpy(full_file_path_filename_offset, dirent->d_name, filename_length);
 			
-			/* 
-			 * Null terminate the string.
-			 */
-
-			full_file_path[filename_last_index] = 0;
-			
+					
 			struct joystick_input_attrib curr_input_attrib;
 			int joystick_device_fd = joystick_open(full_file_path, &curr_input_attrib);
 			if(joystick_device_fd < 0)
@@ -212,62 +285,6 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 	LOGI("Found %li devices satsifying the requirements. \n", joystick_device_found_index);
 
 	return joystick_device_found_index;
-}
-
-
-
-int joystick_open(const char *device_path, struct joystick_input_attrib *input_attrib)
-{
-	assert(device_path != NULL);
-	assert(input_attrib != NULL);
-
-	uint8_t axis_count, button_count;
-	int8_t name[JOYSTICK_NAME_LENGTH];
-	int device_fd;
-
-
-	device_fd = open(device_path, O_RDONLY | O_NONBLOCK);
-	if(device_fd < 0){
-		return -1;
-	}
-	
-	
-	if(ioctl(device_fd, JSIOCGAXES, &axis_count) < 0){
-		goto exit;
-	}
-	
-	if(ioctl(device_fd, JSIOCGBUTTONS, &button_count) < 0){
-		
-		goto exit;
-	}
-	
-	if(ioctl(device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name) < 0)
-	{
-		goto exit;
-	}
-
-	input_attrib->joystick_axis_count = axis_count;
-	input_attrib->joystick_button_count = button_count;
-	memcpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
-
-
-	return device_fd;
-	
-exit:
-	close(device_fd);
-	return -1;
-}
-
-int joystick_close(int joystick_fd)
-{
-	close(joystick_fd);
-
-	return 0;
-}
-
-uint32_t joystick_axis_count(struct joystick_context *context)
-{
-	return context->input_attrib.joystick_axis_count;
 }
 
 

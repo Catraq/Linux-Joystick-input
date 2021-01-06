@@ -72,9 +72,8 @@ int main(int args, char *argv[])
 			fprintf(stderr, "Could not find any joystick device \n");		
 		}else
 		{
-			fprintf(stderr, "Found device");
-			/* Pick first found */
 			joystick_device_path = input_attrib_list[0].joystick_device_path;
+			joystick_input_attrib_print(&input_attrib_list[0],stdout);
 		}
 
 	}
