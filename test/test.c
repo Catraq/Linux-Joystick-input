@@ -4,10 +4,14 @@
 
 #include <string.h>
 
+
+#define JOYSTICK_LOG_TAG 
 #include "joystick.h"
 #include "joystick_map.h"
 
 
+
+static FILE *joystick_log_tag = NULL;
 /* 
  * Joystick requirement 
  */
@@ -45,6 +49,8 @@ static struct joystick_input_requirement joystick_input_req = {
 
 int main(int args, char *argv[])
 {
+	joystick_log_tag = stdout;
+
 	int result = 0;
 	const char *joystick_device_path = NULL;
 

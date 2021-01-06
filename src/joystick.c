@@ -19,7 +19,14 @@
 
 /* Write log to file */
 #define LOG_TAG "JOYSTICK"
+
+
+#ifdef JOYSTICK_LOG_TAG
+#define LOG_FD JOYSTICK_LOG_FD
+#else
 #define LOG_FD stderr
+#endif 
+
 #include "li_log.h"
 
 #define JOYSTICK_EVENT_BUFFER_SIZE 128
