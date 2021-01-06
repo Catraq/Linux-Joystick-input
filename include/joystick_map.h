@@ -35,7 +35,7 @@
  * Maps linear input to linear output.
  */
 
-struct joystick_map_
+struct joystick_map
 {
 	/* Input is the same as columns in A */
 	uint32_t inputs;
@@ -52,24 +52,25 @@ struct joystick_map_
 
 
 
-int joystick_map_create(struct joystick_map_ *map, uint32_t input, uint32_t output)
+int joystick_map_create(struct joystick_map * const map, const uint32_t input, const uint32_t output)
 {
 	assert(map != NULL);
 
 	assert(input != 0);
 	assert(output != 0);
-	
+
+	memset(map, 0, sizeof(struct joystick_map));	
 
 	
 	map->matrix = (float *)malloc(sizeof(float)*input*output);
 	map->offset = (float *)malloc(sizeof(float)*output);
 
 	if(map->matrix == NULL){
-		return -1;
+		goto cleanup_failure;
 	}
 
 	if(map->offset == NULL){
-		return -1;
+		goto cleanup_failure;
 	}
 
 	map->outputs 	= output;
@@ -84,9 +85,16 @@ int joystick_map_create(struct joystick_map_ *map, uint32_t input, uint32_t outp
 	}
 
 	return 0;
+
+cleanup_failure:
+	free(map->matrix);
+	free(map->offset);
+
+	return -1;
+
 }
 
-int joystick_map_destroy(struct joystick_map_ *map)
+int joystick_map_destroy(struct joystick_map * const map)
 {
 	assert(map != NULL);
 	assert(map->matrix != NULL);
@@ -99,7 +107,7 @@ int joystick_map_destroy(struct joystick_map_ *map)
 }
 
 
-int joystick_map_mix(struct joystick_map_ *map, uint32_t input_index, float *output_scale, uint32_t output_scale_count)
+int joystick_map_mix(struct joystick_map * const map, const uint32_t input_index, const float *output_scale, const uint32_t output_scale_count)
 {
 	assert(map != NULL);
 	assert(map->matrix != NULL);
@@ -135,7 +143,7 @@ int joystick_map_mix(struct joystick_map_ *map, uint32_t input_index, float *out
 	return 0;
 }
 
-void joystick_map_print(struct joystick_map_ *map, FILE *output)
+void joystick_map_print(struct joystick_map * const map, FILE * const output)
 {
 	const uint32_t cols = map->inputs;
 	const uint32_t rows = map->outputs;
@@ -159,7 +167,7 @@ void joystick_map_print(struct joystick_map_ *map, FILE *output)
 }
 
 
-int joystick_map_translate(struct joystick_map_ *map, float *input, uint32_t input_length, float *output, uint32_t output_length)
+int joystick_map_translate(struct joystick_map * const map, const float *input, const uint32_t input_length, float * const output, const uint32_t output_length)
 {
 	assert(map != NULL);
 	assert(map->matrix != NULL);
@@ -168,17 +176,15 @@ int joystick_map_translate(struct joystick_map_ *map, float *input, uint32_t inp
 	assert(input != NULL);
 	assert(output != NULL);
 
-	assert(input_length > 0);
-	assert(output_length > 0);
+		
+	/* Boundary check */
+	assert(input_length == map->inputs);
+	assert(output_length == map->outputs);
 	
 	/* Avoid confusing ourself */
 	const uint32_t rows = map->outputs;
 	const uint32_t cols = map->inputs;
-	
-	/* Boundary check */
-	assert(input_length <= map->inputs);
-	assert(output_length <= map->outputs);
-	
+
 
 	/*
 	 * Matrix vector mul. Ax = b

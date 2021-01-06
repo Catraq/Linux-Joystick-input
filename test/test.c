@@ -4,9 +4,21 @@
 
 #include <string.h>
 
-#include "joystick_ps3.h"
+#include "joystick.h"
 #include "joystick_map.h"
 
+
+/* 
+ * Joystick requirement 
+ */
+const uint32_t app_input_axis_req = 2;
+const uint32_t app_input_button_req = 1;
+
+
+/*
+ * The input is translated into this many application inputs.  
+ */
+const uint32_t app_inputs = 6;
 
 
 /* 
@@ -18,15 +30,15 @@ static struct joystick_context joystick_controller;
 /* 
  * This mapps the input from the joystick to the inputs in the appplciation.
  */
-static struct joystick_map_ joystick_controller_map;
+static struct joystick_map joystick_controller_map;
 
 /* 
  * Minium rquirement of input device. 
  */
 
 static struct joystick_input_requirement joystick_input_req = {
-	.joystick_axis_count = 4,
-	.joystick_button_count = 4,
+	.joystick_axis_count = app_input_axis_req,
+	.joystick_button_count = app_input_button_req,
 };
 
 
@@ -37,45 +49,52 @@ int main(int args, char *argv[])
 	const char *joystick_device_path = NULL;
 
 	/* 
-	 * No joystick path passed from command line
+	 * If no joystick path is passed from command line, then 
+	 * try to find joystick that satisfy the requirements.
 	 */
 
-	const size_t input_attrib_list_count = 4;
+	const size_t input_attrib_list_count = 8; // This number is arbitary 
 	struct joystick_input_attrib input_attrib_list[input_attrib_list_count];
 	memset(&input_attrib_list, 0, sizeof input_attrib_list);
+
+
 	if(joystick_device_path == NULL)
 	{
 		
 		size_t number_of_joysticks = joystick_identify_by_requirement(&joystick_input_req, input_attrib_list, input_attrib_list_count);
 		if(number_of_joysticks == 0){
-			fprintf(stderr, "Could not find any joystick device \nExiting \n");		
-			exit(EXIT_FAILURE);
+			fprintf(stderr, "Could not find any joystick device \n");		
+		}else
+		{
+			fprintf(stderr, "Found device");
+			/* Pick first found */
+			joystick_device_path = input_attrib_list[0].joystick_device_path;
 		}
-
-		joystick_device_path = input_attrib_list[0].joystick_device_path;
 
 	}
 
 	
-
-	if(args < 2){
+	if((joystick_device_path == NULL) && (args < 2)){
 		fprintf(stdout, "Usage: %s ps3-dev-path \n", argv[0]);
 		exit(EXIT_FAILURE);
+	}else if(args == 2)
+	{
+		joystick_device_path = argv[2];
 	}
 
 
-	result = joystick_init(&joystick_controller, joystick_device_path,  0);
+	result = joystick_init(&joystick_controller, joystick_device_path);
 	if(result < 0){
 		fprintf(stderr, "joystick_ps3_intialize(): error \n");
 		exit(EXIT_FAILURE);
 	}
 	else{
 
-		/* Determined by the input joystick. */	
+		/* Determined by the input joystick HW. */	
 		const uint32_t linear_inputs = joystick_axis_count(&joystick_controller);
 
 		/* Determined by the application requirement. */
-		const uint32_t outputs = 4;
+		const uint32_t outputs = app_inputs;
 
 		
 		result = joystick_map_create(&joystick_controller_map, linear_inputs, outputs);
@@ -85,12 +104,12 @@ int main(int args, char *argv[])
 		}
 
 		/*
-		 * Assing input index 0 to output index 1,4
+		 * Assing input index 0 to output index 1,4,5,6
 		 */
 
 		{	
 			uint32_t input_index = 0;
-			float output_channels[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+			float output_channels[6] = {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 			uint32_t output_channel_count = outputs;
 
 			result = joystick_map_mix(&joystick_controller_map, input_index, output_channels, output_channel_count);
@@ -102,44 +121,48 @@ int main(int args, char *argv[])
 		}
 	}
 
-	
+	struct joystick_input_value input_values;
+       	result = joystick_input_create(&joystick_controller, &input_values);
+	if(result < 0)
+	{
+		fprintf(stderr, "joystick_input_create(): error \n");
+		exit(EXIT_FAILURE);
+	}
 
-	/* Something....*/
+
+       	joystick_input_clear(&joystick_controller, &input_values);
+
+
 	while(1)
 	{
-		struct joystick_ps3 input;
 		
 		clock_t time = clock();
 		
-		/* Read input vector */
-		const uint32_t usec = 0;
-		result = joystick_input(&joystick_controller, &input, usec);
+		result = joystick_input(&joystick_controller, &input_values);
 		if(result < 0){
-			printf("joystick_ps3_input(): error \n");
+			//Invalid state. What todo? Reopen device! 
+			printf("joystick_input(): error \n");
 		}
 
-		for(uint32_t i = 0; i < JOYSTICK_PS3_AXIS_LENGTH; i++){
-			input.axis[i] = INT16_MAX;
-		}
 		
 			
-		float norm_output[4];
-		float norm_input[JOYSTICK_PS3_AXIS_LENGTH];
-		for(uint32_t i = 0; i < JOYSTICK_PS3_AXIS_LENGTH; i++)
+		float norm_output[6];
+		float norm_input[2];
+		for(uint32_t i = 0; i < 2; i++)
 		{
 			/* 
 			 * Input is in range int16_t. Convert to uint16_t range.
 			 */
-			norm_input[i] = (float)input.axis[i]/INT16_MAX;
+			norm_input[i] = (float)(input_values.joystick_axis_value[i])/INT16_MAX;
 		}
 
 		
-		result = joystick_map_translate(&joystick_controller_map, norm_input, JOYSTICK_PS3_AXIS_LENGTH, norm_output, 4);
+		result = joystick_map_translate(&joystick_controller_map, norm_input, 2, norm_output, 6);
 		if(result < 0)
 		{
 			//TODO: Error, but what and how? 	
 		}
-	
+
 
 
 		float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
@@ -156,18 +179,19 @@ int main(int args, char *argv[])
 			printf("nanosleep(): error \n");
 		}
 
-		for(int i = 0; i < 4; i++){
+		for(int i = 0; i < 6; i++){
 			float value = norm_output[i];
 			printf("%f,", value); 
 		}
 		printf("\n");
 
-
+#if 0
 		if(input.button[JOYSTICK_PS3_BUTTON_CIRCLE] == 1){
 			printf("JOYSTICK_PS3_BUTTON_CIRCLE pressed. Exiting. \n");	
 			joystick_destroy(&joystick_controller);
 			break;
 		}
+#endif 
 
 
 	}
