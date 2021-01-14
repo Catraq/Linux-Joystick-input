@@ -32,7 +32,7 @@ static FILE *joystick_log_tag = NULL;
  * Joystick context. 
  */
 
-static struct joystick_context joystick_controller;
+static struct joystick_device joystick_controller;
 
 /* 
  * This mapps the input from the joystick to the inputs in the appplciation.
@@ -47,8 +47,6 @@ static struct joystick_input_requirement joystick_input_req = {
 	.joystick_axis_count = APP_INPUT_AXIS_REQ,
 	.joystick_button_count = APP_INPUT_BUTTON_REQ,
 };
-
-
 
 int main(int args, char *argv[])
 {
@@ -70,7 +68,7 @@ int main(int args, char *argv[])
 	if(joystick_device_path == NULL)
 	{
 		
-		size_t number_of_joysticks = joystick_identify_by_requirement(&joystick_input_req, input_attrib_list, input_attrib_list_count);
+		size_t number_of_joysticks = joystick_device_identify_by_requirement(&joystick_input_req, input_attrib_list, input_attrib_list_count);
 		if(number_of_joysticks == 0){
 			fprintf(stderr, "Could not find any joystick device \n");		
 		}else
@@ -91,7 +89,7 @@ int main(int args, char *argv[])
 	}
 
 
-	result = joystick_init(&joystick_controller, joystick_device_path);
+	result = joystick_device_create(&joystick_controller, joystick_device_path);
 	if(result < 0){
 		fprintf(stderr, "joystick_ps3_intialize(): error \n");
 		exit(EXIT_FAILURE);
@@ -99,7 +97,7 @@ int main(int args, char *argv[])
 	else{
 
 		/* Determined by the input joystick HW. */	
-		const uint32_t linear_inputs = joystick_axis_count(&joystick_controller);
+		const uint32_t linear_inputs = joystick_device_axis_count(&joystick_controller);
 
 		/* Determined by the application requirement. */
 		const uint32_t outputs = APP_INPUTS;
@@ -129,6 +127,7 @@ int main(int args, char *argv[])
 		}
 	}
 
+#if 0
 	struct joystick_input_value input_values;
        	result = joystick_input_create(&joystick_controller, &input_values);
 	if(result < 0)
@@ -139,6 +138,7 @@ int main(int args, char *argv[])
 
 
        	joystick_input_clear(&joystick_controller, &input_values);
+#endif 
 
 
 	while(1)
@@ -147,60 +147,37 @@ int main(int args, char *argv[])
 		clock_t time = clock();
 		float output[APP_INPUTS];
 		const uint32_t output_count = APP_INPUTS;
+		
 
-		result = joystick_input(&joystick_controller, &input_values);
+		result = joystick_device_poll(&joystick_controller);
 		if(result < 0){
 			printf("joystick_input(): error \n");
 		}
 
 		else if(result > 0)
 		{
-
-			float *input = input_values.joystick_axis_value;
-			uint32_t input_count = joystick_axis_count(&joystick_controller);
-			
-			result = joystick_map_translate(&joystick_controller_map, input, input_count, output, output_count);
-			if(result < 0)
-			{
-				//TODO: Error, but what and how? 	
-			}
-
-			
-			/* Button required when finding device */
-			if(input_values.joystick_button_value[0] == 1){
-				printf("Button 0 pressed. Exiting. \n");	
-				break;
-			}
-
+			joystick_map_translate(&joystick_controller_map, &joystick_controller, output, output_count);
+						
+#if 1
 			float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
 			printf("DT: %f :", dt);
-
 
 			for(int i = 0; i < APP_INPUTS; i++){
 				printf("%f,", output[i]); 
 			}
 			printf("\n");
-		}
-#if 0
-		struct timespec loop_sleep = {
-			.tv_sec = 0,
-			.tv_nsec = (long)(100 * 1000 * 1000)
 
-		};
-
-		result = nanosleep(&loop_sleep, NULL);
-		if(result < 0){
-			printf("nanosleep(): error \n");
-		}
 #endif 
-
+		}
 			
 
 	}
-	
+
+#if 0
 	joystick_input_destroy(&input_values);
+#endif 
 	joystick_map_destroy(&joystick_controller_map);
-	joystick_destroy(&joystick_controller);
+	joystick_device_destroy(&joystick_controller);
 
 	
 	return 0;

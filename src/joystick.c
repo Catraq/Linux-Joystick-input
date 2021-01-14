@@ -98,23 +98,22 @@ void joystick_input_attrib_print(struct joystick_input_attrib *input_attrib, FIL
 
 }
 
-uint32_t joystick_axis_count(struct joystick_context *context)
+uint32_t joystick_device_axis_count(struct joystick_device *device)
 {
-	assert(context != NULL);
+	assert(device != NULL);
 
-	return context->input_attrib.joystick_axis_count;
+	return device->input_attrib.joystick_axis_count;
 }
 
 
-int joystick_input(struct joystick_context *context, struct joystick_input_value *input)
+int joystick_device_poll(struct joystick_device *device)
 {
-	assert(context != NULL);
-	assert(input != NULL);
+	assert(device != NULL);
 
 	int result = 0;
 		
 	struct js_event js_event_buffer[JOYSTICK_EVENT_BUFFER_SIZE];
-	result = read(context->device_fd, js_event_buffer, sizeof js_event_buffer);
+	result = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
 	if((result == -1)  && (errno != EAGAIN)){
 		return -1;	
 	}
@@ -125,8 +124,8 @@ int joystick_input(struct joystick_context *context, struct joystick_input_value
 
 		const uint32_t buffer_size = result/sizeof(struct js_event); 
 
-		const int16_t joystick_axis_count = context->input_attrib.joystick_axis_count;
-		const int16_t joystick_button_count = context->input_attrib.joystick_button_count;
+		const int16_t joystick_axis_count = device->input_attrib.joystick_axis_count;
+		const int16_t joystick_button_count = device->input_attrib.joystick_button_count;
 
 		for(int i = 0; i < buffer_size; i++)
 		{
@@ -145,13 +144,13 @@ int joystick_input(struct joystick_context *context, struct joystick_input_value
 
 						/* Map INT16_T range to float [-1, 1] */
 						float mapped = ((float)value)/((float)INT16_MAX);
-						input->joystick_axis_value[number] = mapped;
+						device->input_value.joystick_axis_value[number] = mapped;
 					}
 				break;	
 
 				case JS_EVENT_BUTTON:
 					if(number < joystick_button_count){
-						input->joystick_button_value[number] = value;
+						device->input_value.joystick_button_value[number] = value;
 					}
 				break;	
 			}
@@ -165,7 +164,7 @@ int joystick_input(struct joystick_context *context, struct joystick_input_value
 }
 
 
-size_t joystick_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max)
+size_t joystick_device_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max)
 {
 
 	assert(input_requirement != NULL);
@@ -293,9 +292,9 @@ size_t joystick_identify_by_requirement(struct joystick_input_requirement *input
 }
 
 
-int joystick_input_create(struct joystick_context *context, struct joystick_input_value *value)
+static int joystick_input_create(struct joystick_device *device, struct joystick_input_value *value)
 {
-	assert(context != NULL);
+	assert(device != NULL);
 	assert(value != NULL);
 
 
@@ -305,8 +304,8 @@ int joystick_input_create(struct joystick_context *context, struct joystick_inpu
 	 * int16 range. 
 	 */	
 
-	value->joystick_axis_value = (float *)malloc(sizeof(float) * context->input_attrib.joystick_axis_count);
-	value->joystick_button_value = (int16_t *)malloc(sizeof(int16_t) * context->input_attrib.joystick_button_count);
+	value->joystick_axis_value = (float *)malloc(sizeof(float) * device->input_attrib.joystick_axis_count);
+	value->joystick_button_value = (int16_t *)malloc(sizeof(int16_t) * device->input_attrib.joystick_button_count);
 
 	if(value->joystick_axis_value == NULL){
 		goto error;					
@@ -329,18 +328,18 @@ error:
 	return -1;
 }
 
-void joystick_input_clear(struct joystick_context *context, struct joystick_input_value *value)
+static void joystick_input_clear(struct joystick_device *device, struct joystick_input_value *value)
 {
-	assert(context != NULL);
+	assert(device != NULL);
 	assert(value != NULL);
 
 
-	memset(value->joystick_axis_value, 0, sizeof(float) * context->input_attrib.joystick_axis_count);
-	memset(value->joystick_button_value, 0, sizeof(int16_t) * context->input_attrib.joystick_button_count);
+	memset(value->joystick_axis_value, 0, sizeof(float) * device->input_attrib.joystick_axis_count);
+	memset(value->joystick_button_value, 0, sizeof(int16_t) * device->input_attrib.joystick_button_count);
 
 }
 
-int joystick_input_destroy(struct joystick_input_value *value)
+static int joystick_input_destroy(struct joystick_input_value *value)
 {
 	assert(value != NULL);
 
@@ -350,40 +349,48 @@ int joystick_input_destroy(struct joystick_input_value *value)
 	return 0;
 }
 
-int joystick_init(struct joystick_context *context, const char *device_path)
+int joystick_device_create(struct joystick_device *device, const char *device_path)
 {
-	assert(context != NULL);
+	assert(device != NULL);
 	assert(device_path != NULL);
 	
 		
 	int result = 0;
-	memset(context, 0, sizeof(struct joystick_context));
+	memset(device, 0, sizeof(struct joystick_device));
 	
 	/* 
 	 * Open device and get attributes.
 	 */
 
-	context->device_fd = joystick_open(device_path, &context->input_attrib);
+	device->device_fd = joystick_open(device_path, &device->input_attrib);
+
 	
-	if(context->device_fd < 0){
+	if(device->device_fd < 0){
 		return -1;	
 	}
 
+	result = joystick_input_create(device, &device->input_value);
+	if(result < 0){
+		goto error;
+	}
+	
+	joystick_input_clear(device, &device->input_value);
 
 	return 0;
 
 error:
-	close(context->device_fd);
+	close(device->device_fd);
 
 	return -1;
 }
 
 
-int joystick_destroy(struct joystick_context *context)
+int joystick_device_destroy(struct joystick_device *device)
 {
-	assert(context != NULL);
-
-	close(context->device_fd);
+	assert(device != NULL);
+	
+	joystick_input_destroy(&device->input_value);
+	close(device->device_fd);
 
 	return 0;
 }

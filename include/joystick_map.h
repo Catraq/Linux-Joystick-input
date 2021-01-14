@@ -167,15 +167,18 @@ void joystick_map_print(struct joystick_map * const map, FILE * const output)
 }
 
 
-int joystick_map_translate(struct joystick_map * const map, const float *input, const uint32_t input_length, float * const output, const uint32_t output_length)
+int joystick_map_translate(struct joystick_map * const map, struct joystick_device *device,  float * const output, const uint32_t output_length)
 {
 	assert(map != NULL);
 	assert(map->matrix != NULL);
 	assert(map->offset != NULL);
 
+
+	float *input = device->input_value.joystick_axis_value;	
+	uint32_t input_length = device->input_attrib.joystick_axis_count;
+
 	assert(input != NULL);
 	assert(output != NULL);
-
 		
 	/* Boundary check */
 	assert(input_length == map->inputs);

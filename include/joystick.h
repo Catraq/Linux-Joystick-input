@@ -56,29 +56,38 @@ struct joystick_input_value
 }; 
 
 
-struct joystick_context
+struct joystick_device
 {
 	int device_fd;
 
 	struct joystick_input_attrib input_attrib;
+	struct joystick_input_value input_value;
 };
 
 
 void joystick_input_attrib_print(struct joystick_input_attrib *input_attrib, FILE *out);
 
-uint32_t joystick_axis_count(struct joystick_context *context);
+
+/*
+ * Get number of axises on a controller 
+ * 
+ * @param joystick_device that is initialized. 
+ *
+ * @return number of axises. 
+ */
+uint32_t joystick_device_axis_count(struct joystick_device *device);
 
 /* 
- * Read joystick values. 
+ * Poll new values into value. 
  *
- * @param context Initialized context. 
+ * @param device Initialized device. 
  *
  * @param value Where read data will be stored.  
  *
- * @return Returns 0 on success. -1 on failure. 
+ * @return Returns 1 if there are new values, 0 on nothing, but success. -1 on failure. 
  */
 
-int joystick_input(struct joystick_context *context, struct joystick_input_value *value);
+int joystick_device_poll(struct joystick_device *device);
 
 
 /* 
@@ -94,72 +103,28 @@ int joystick_input(struct joystick_context *context, struct joystick_input_value
  *
  */
 
-size_t joystick_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
+size_t joystick_device_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
 
 /* 
- * Initialize joystick context.  
+ * Initialize joystick device.  
  * 
- * @param context joystick context that should be initialized. 
+ * @param device joystick device that should be initialized. 
  *
  * @param device_path should be system path to ps3 controller. Usually /dev/input/*
  * 
  * @return Returns 0 on success. -1 on failure.
  */
 
-int joystick_init(struct joystick_context *context, const char *device_path);
+int joystick_device_create(struct joystick_device *device, const char *device_path);
 
 /*
- * Destroy ps3 joystick context. 
+ * Destroy ps3 joystick device. 
  *
- * @param joystick ps3 context to destroy. 
+ * @param joystick ps3 device to destroy. 
  *
  * @return 0 on success. -1 on failure. 
  */
-int joystick_destroy(struct joystick_context *context);
-
-
-
-/*  
- *  The structure joystick_input_value is used for reading the data 
- *  from the joystick and then mapping it to the application input 
- *  using the functions in joystick_map.h.
- */
-
-
-/*
- * Create joystick input buffer. 
- * Allocates memory for buttons and axises. 
- *
- * @param context Joystick context that is initialized. 
- *
- * @param value Pointer to uninitialized structure. The structure data have to be all 0. 
- *
- * @return 0 on success. -1 on failure. 
- */
-
-int joystick_input_create(struct joystick_context *context, struct joystick_input_value *value);
-
-/*
- * Create joystick input buffer. 
- * Deallocates memory for buttons and axises. 
- *
- * @param value Pointer to structure that have been initialized. 
- *
- * @return 0 on success. -1 on failure. 
- */
-int joystick_input_destroy(struct joystick_input_value *value);
-
-/*
- * Clears the memory if the input buffer. 
- *
- * @param context Joystick context that is initialized. 
- *
- * @param value Pointer to a initialized structure.
- *
- * @return 0 on success. -1 on failure. 
- */
-
-void joystick_input_clear(struct joystick_context *context, struct joystick_input_value *value);
+int joystick_device_destroy(struct joystick_device *device);
 
 #ifdef __cplusplus
 }
