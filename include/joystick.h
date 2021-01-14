@@ -51,7 +51,7 @@ struct joystick_input_requirement
 
 struct joystick_input_value
 {
-	int16_t *joystick_axis_value;
+	float *joystick_axis_value;
 	int16_t *joystick_button_value;
 }; 
 

@@ -12,17 +12,20 @@
 
 
 static FILE *joystick_log_tag = NULL;
+
 /* 
  * Joystick requirement 
  */
-const uint32_t app_input_axis_req = 2;
-const uint32_t app_input_button_req = 1;
+
+#define APP_INPUT_AXIS_REQ 	2
+#define APP_INPUT_BUTTON_REQ 	1
 
 
 /*
  * The input is translated into this many application inputs.  
  */
-const uint32_t app_inputs = 6;
+
+#define APP_INPUTS 6
 
 
 /* 
@@ -41,8 +44,8 @@ static struct joystick_map joystick_controller_map;
  */
 
 static struct joystick_input_requirement joystick_input_req = {
-	.joystick_axis_count = app_input_axis_req,
-	.joystick_button_count = app_input_button_req,
+	.joystick_axis_count = APP_INPUT_AXIS_REQ,
+	.joystick_button_count = APP_INPUT_BUTTON_REQ,
 };
 
 
@@ -99,7 +102,7 @@ int main(int args, char *argv[])
 		const uint32_t linear_inputs = joystick_axis_count(&joystick_controller);
 
 		/* Determined by the application requirement. */
-		const uint32_t outputs = app_inputs;
+		const uint32_t outputs = APP_INPUTS;
 
 		
 		result = joystick_map_create(&joystick_controller_map, linear_inputs, outputs);
@@ -114,7 +117,7 @@ int main(int args, char *argv[])
 
 		{	
 			uint32_t input_index = 0;
-			float output_channels[6] = {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
+			float output_channels[APP_INPUTS] = {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 			uint32_t output_channel_count = outputs;
 
 			result = joystick_map_mix(&joystick_controller_map, input_index, output_channels, output_channel_count);
@@ -142,37 +145,43 @@ int main(int args, char *argv[])
 	{
 		
 		clock_t time = clock();
-		
+		float output[APP_INPUTS];
+		const uint32_t output_count = APP_INPUTS;
+
 		result = joystick_input(&joystick_controller, &input_values);
 		if(result < 0){
-			//Invalid state. What todo? Reopen device! 
 			printf("joystick_input(): error \n");
 		}
 
-		
+		else if(result > 0)
+		{
+
+			float *input = input_values.joystick_axis_value;
+			uint32_t input_count = joystick_axis_count(&joystick_controller);
 			
-		float norm_output[6];
-		float norm_input[2];
-		for(uint32_t i = 0; i < 2; i++)
-		{
-			/* 
-			 * Input is in range int16_t. Convert to uint16_t range.
-			 */
-			norm_input[i] = (float)(input_values.joystick_axis_value[i])/INT16_MAX;
+			result = joystick_map_translate(&joystick_controller_map, input, input_count, output, output_count);
+			if(result < 0)
+			{
+				//TODO: Error, but what and how? 	
+			}
+
+			
+			/* Button required when finding device */
+			if(input_values.joystick_button_value[0] == 1){
+				printf("Button 0 pressed. Exiting. \n");	
+				break;
+			}
+
+			float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
+			printf("DT: %f :", dt);
+
+
+			for(int i = 0; i < APP_INPUTS; i++){
+				printf("%f,", output[i]); 
+			}
+			printf("\n");
 		}
-
-		
-		result = joystick_map_translate(&joystick_controller_map, norm_input, 2, norm_output, 6);
-		if(result < 0)
-		{
-			//TODO: Error, but what and how? 	
-		}
-
-
-
-		float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
-		printf("DT: %f :", dt);
-
+#if 0
 		struct timespec loop_sleep = {
 			.tv_sec = 0,
 			.tv_nsec = (long)(100 * 1000 * 1000)
@@ -183,24 +192,15 @@ int main(int args, char *argv[])
 		if(result < 0){
 			printf("nanosleep(): error \n");
 		}
-
-		for(int i = 0; i < 6; i++){
-			float value = norm_output[i];
-			printf("%f,", value); 
-		}
-		printf("\n");
-
-#if 0
-		if(input.button[JOYSTICK_PS3_BUTTON_CIRCLE] == 1){
-			printf("JOYSTICK_PS3_BUTTON_CIRCLE pressed. Exiting. \n");	
-			joystick_destroy(&joystick_controller);
-			break;
-		}
 #endif 
 
+			
 
 	}
-
+	
+	joystick_input_destroy(&input_values);
+	joystick_map_destroy(&joystick_controller_map);
+	joystick_destroy(&joystick_controller);
 
 	
 	return 0;
