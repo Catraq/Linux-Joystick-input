@@ -90,6 +90,9 @@ uint32_t joystick_device_axis_count(struct joystick_device *device);
 int joystick_device_poll(struct joystick_device *device);
 
 
+int joystick_device_reopen(struct joystick_device *device, const char *device_path);
+
+
 /* 
  * Used for identifying joystick devices that satisfys some requirements. 
  *

@@ -65,7 +65,6 @@ static int joystick_open(const char *device_path, struct joystick_input_attrib *
 	input_attrib->joystick_axis_count = axis_count;
 	input_attrib->joystick_button_count = button_count;
 
-
 	memcpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
 
 
@@ -161,6 +160,43 @@ int joystick_device_poll(struct joystick_device *device)
 	}
 
 	return 0;
+}
+
+int joystick_device_reopen(struct joystick_device *device, const char *device_path)
+{
+	assert(device != NULL);
+	assert(device_path != NULL);
+
+	int result = 0;
+	
+	/* Make sure it's actually is closed. */	
+	close(device->device_fd);
+	
+	/* Try to open the device and 
+	 * make sure that it is the same device. 
+	 */
+	
+	struct joystick_input_attrib input_attrib;
+	result = joystick_open(device_path, &input_attrib);
+	if(result < 0){
+		return -1;
+	}
+	
+	result = memcmp(input_attrib.joystick_name, device->input_attrib.joystick_name, sizeof input_attrib.joystick_name);
+	if(result != 0){
+		return -1;	
+	}
+
+	if(input_attrib.joystick_axis_count != device->input_attrib.joystick_axis_count){
+		return -1;	
+	}
+
+	if(input_attrib.joystick_button_count != device->input_attrib.joystick_button_count){
+		return -1;	
+	}
+
+
+	return 1;
 }
 
 

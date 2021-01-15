@@ -127,20 +127,6 @@ int main(int args, char *argv[])
 		}
 	}
 
-#if 0
-	struct joystick_input_value input_values;
-       	result = joystick_input_create(&joystick_controller, &input_values);
-	if(result < 0)
-	{
-		fprintf(stderr, "joystick_input_create(): error \n");
-		exit(EXIT_FAILURE);
-	}
-
-
-       	joystick_input_clear(&joystick_controller, &input_values);
-#endif 
-
-
 	while(1)
 	{
 		
@@ -151,7 +137,8 @@ int main(int args, char *argv[])
 
 		result = joystick_device_poll(&joystick_controller);
 		if(result < 0){
-			printf("joystick_input(): error \n");
+			result = joystick_device_reopen(&joystick_controller, joystick_device_path);
+			(void)result;
 		}
 
 		else if(result > 0)
@@ -173,9 +160,6 @@ int main(int args, char *argv[])
 
 	}
 
-#if 0
-	joystick_input_destroy(&input_values);
-#endif 
 	joystick_map_destroy(&joystick_controller_map);
 	joystick_device_destroy(&joystick_controller);
 
