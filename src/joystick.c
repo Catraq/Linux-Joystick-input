@@ -385,7 +385,7 @@ static int joystick_input_destroy(struct joystick_input_value *value)
 	return 0;
 }
 
-int joystick_device_create(struct joystick_device *device, const char *device_path)
+int joystick_device_open(struct joystick_device *device, const char *device_path)
 {
 	assert(device != NULL);
 	assert(device_path != NULL);
@@ -421,7 +421,7 @@ error:
 }
 
 
-int joystick_device_destroy(struct joystick_device *device)
+int joystick_device_close(struct joystick_device *device)
 {
 	assert(device != NULL);
 	

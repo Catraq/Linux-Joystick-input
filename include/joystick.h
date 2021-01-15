@@ -118,7 +118,7 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
  * @return Returns 0 on success. -1 on failure.
  */
 
-int joystick_device_create(struct joystick_device *device, const char *device_path);
+int joystick_device_open(struct joystick_device *device, const char *device_path);
 
 /*
  * Destroy ps3 joystick device. 
@@ -127,7 +127,7 @@ int joystick_device_create(struct joystick_device *device, const char *device_pa
  *
  * @return 0 on success. -1 on failure. 
  */
-int joystick_device_destroy(struct joystick_device *device);
+int joystick_device_close(struct joystick_device *device);
 
 #ifdef __cplusplus
 }

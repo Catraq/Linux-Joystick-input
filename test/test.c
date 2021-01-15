@@ -89,7 +89,7 @@ int main(int args, char *argv[])
 	}
 
 
-	result = joystick_device_create(&joystick_controller, joystick_device_path);
+	result = joystick_device_open(&joystick_controller, joystick_device_path);
 	if(result < 0){
 		fprintf(stderr, "joystick_ps3_intialize(): error \n");
 		exit(EXIT_FAILURE);
@@ -161,7 +161,7 @@ int main(int args, char *argv[])
 	}
 
 	joystick_map_destroy(&joystick_controller_map);
-	joystick_device_destroy(&joystick_controller);
+	joystick_device_close(&joystick_controller);
 
 	
 	return 0;
