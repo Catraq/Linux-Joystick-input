@@ -146,7 +146,6 @@ int joystick_map_mix(struct joystick_map * const map, const uint32_t input_index
 void joystick_map_print(struct joystick_map * const map, FILE * const output)
 {
 	const uint32_t cols = map->inputs;
-	const uint32_t rows = map->outputs;
 	/* 
 	 * Inner is column and outer is row
 	 */
@@ -185,7 +184,6 @@ int joystick_map_translate(struct joystick_map * const map, struct joystick_devi
 	assert(output_length == map->outputs);
 	
 	/* Avoid confusing ourself */
-	const uint32_t rows = map->outputs;
 	const uint32_t cols = map->inputs;
 
 

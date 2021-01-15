@@ -109,24 +109,23 @@ int joystick_device_poll(struct joystick_device *device)
 {
 	assert(device != NULL);
 
-	int result = 0;
 		
 	struct js_event js_event_buffer[JOYSTICK_EVENT_BUFFER_SIZE];
-	result = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
+	ssize_t result = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
 	if((result == -1)  && (errno != EAGAIN)){
 		return -1;	
 	}
 	
-	const uint32_t buffer_size_verify = result%sizeof(struct js_event); 
+	uint32_t buffer_size_verify = ((size_t)result)%sizeof(struct js_event); 
 	if(buffer_size_verify == 0)
 	{
-
-		const uint32_t buffer_size = result/sizeof(struct js_event); 
+		
+		uint32_t buffer_size = (uint32_t)result/sizeof(struct js_event); 
 
 		const int16_t joystick_axis_count = device->input_attrib.joystick_axis_count;
 		const int16_t joystick_button_count = device->input_attrib.joystick_button_count;
 
-		for(int i = 0; i < buffer_size; i++)
+		for(size_t i = 0; i < buffer_size; i++)
 		{
 			/*
 			 * Read event and write to input buffer
@@ -258,7 +257,6 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 		 * d_name is null terminated. 
 		 */
 
-		char *filename = dirent->d_name;	
 		size_t filename_length = strlen(dev_path);
 		size_t filename_last_index = filename_length + dev_path_length;
 
