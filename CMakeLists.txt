@@ -5,5 +5,5 @@ set(CMAKE_C_STANDARD 99)
 
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-add_executable(joystick_test src/joystick.c test/test.c)
+add_executable(joystick_test src/joystick.c src/joystick_map.c test/test.c)
 target_link_libraries(joystick_test pthread)
