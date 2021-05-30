@@ -140,7 +140,6 @@ int main(int args, char *argv[])
 			result = joystick_device_reopen(&joystick_controller, joystick_device_path);
 			(void)result;
 		}
-
 		else if(result > 0)
 		{
 			joystick_map_translate(&joystick_controller_map, &joystick_controller, output, output_count);

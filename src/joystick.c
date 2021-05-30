@@ -31,50 +31,6 @@
 
 #define JOYSTICK_EVENT_BUFFER_SIZE 128
 
-static int joystick_open(const char *device_path, struct joystick_input_attrib *input_attrib)
-{
-	assert(device_path != NULL);
-	assert(input_attrib != NULL);
-
-	uint8_t axis_count, button_count;
-	int8_t name[JOYSTICK_NAME_LENGTH];
-	int device_fd = -1;
-
-
-	device_fd = open(device_path, O_RDONLY | O_NONBLOCK);
-	if(device_fd < 0){
-		return -1;
-	}
-	
-	
-	if(ioctl(device_fd, JSIOCGAXES, &axis_count) < 0){
-		goto exit;
-	}
-	
-	if(ioctl(device_fd, JSIOCGBUTTONS, &button_count) < 0){
-		
-		goto exit;
-	}
-	
-	/* Will be null termianted */	
-	if(ioctl(device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name) < 0)
-	{
-		goto exit;
-	}
-
-	input_attrib->joystick_axis_count = axis_count;
-	input_attrib->joystick_button_count = button_count;
-
-	memcpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
-
-
-	return device_fd;
-	
-exit:
-	close(device_fd);
-	return -1;
-}
-
 static int joystick_close(int joystick_fd)
 {
 	close(joystick_fd);
@@ -160,6 +116,61 @@ int joystick_device_poll(struct joystick_device *device)
 	}
 
 	return 0;
+}
+
+static int joystick_open(const char *device_path, struct joystick_input_attrib *input_attrib)
+{
+	assert(device_path != NULL);
+	assert(input_attrib != NULL);
+
+	uint8_t axis_count, button_count;
+	int8_t name[JOYSTICK_NAME_LENGTH];
+	int device_fd = -1;
+
+
+	device_fd = open(device_path, O_RDONLY | O_NONBLOCK);
+	if(device_fd < 0){
+		return -1;
+	}
+	
+	
+	if(ioctl(device_fd, JSIOCGAXES, &axis_count) < 0){
+		goto exit;
+	}
+	
+	if(ioctl(device_fd, JSIOCGBUTTONS, &button_count) < 0){
+		
+		goto exit;
+	}
+	
+	/* Will be null termianted */	
+	if(ioctl(device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name) < 0)
+	{
+		goto exit;
+	}
+
+
+	if(axis_count > JOYSTICK_AXIS_MAX)
+	{
+		goto exit;
+	}
+
+	if(button_count > JOYSTICK_BUTTON_MAX)
+	{
+		goto exit;
+	}
+
+	input_attrib->joystick_axis_count = axis_count;
+	input_attrib->joystick_button_count = button_count;
+
+	memcpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
+
+
+	return device_fd;
+	
+exit:
+	close(device_fd);
+	return -1;
 }
 
 int joystick_device_reopen(struct joystick_device *device, const char *device_path)
@@ -328,62 +339,6 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 }
 
 
-static int joystick_input_create(struct joystick_device *device, struct joystick_input_value *value)
-{
-	assert(device != NULL);
-	assert(value != NULL);
-
-
-	/* 
-	 * Allocate memory for all the inputs 
-	 * According to the linux doc are all joystick input in the signed 
-	 * int16 range. 
-	 */	
-
-	value->joystick_axis_value = (float *)malloc(sizeof(float) * device->input_attrib.joystick_axis_count);
-	value->joystick_button_value = (int16_t *)malloc(sizeof(int16_t) * device->input_attrib.joystick_button_count);
-
-	if(value->joystick_axis_value == NULL){
-		goto error;					
-	}
-
-	if(value->joystick_button_value == NULL){
-		goto error;	
-	}
-
-	return 0;
-error:
-
-	/*
-	 * Free NULL is fine
-	 */
-
-	free(value->joystick_axis_value);
-	free(value->joystick_button_value);
-
-	return -1;
-}
-
-static void joystick_input_clear(struct joystick_device *device, struct joystick_input_value *value)
-{
-	assert(device != NULL);
-	assert(value != NULL);
-
-
-	memset(value->joystick_axis_value, 0, sizeof(float) * device->input_attrib.joystick_axis_count);
-	memset(value->joystick_button_value, 0, sizeof(int16_t) * device->input_attrib.joystick_button_count);
-
-}
-
-static int joystick_input_destroy(struct joystick_input_value *value)
-{
-	assert(value != NULL);
-
-	free(value->joystick_axis_value);
-	free(value->joystick_button_value);
-
-	return 0;
-}
 
 int joystick_device_open(struct joystick_device *device, const char *device_path)
 {
@@ -405,12 +360,7 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 		return -1;	
 	}
 
-	result = joystick_input_create(device, &device->input_value);
-	if(result < 0){
-		goto error;
-	}
-	
-	joystick_input_clear(device, &device->input_value);
+	memset(&device->input_value, 0, sizeof device->input_value);
 
 	return 0;
 
@@ -425,7 +375,6 @@ int joystick_device_close(struct joystick_device *device)
 {
 	assert(device != NULL);
 	
-	joystick_input_destroy(&device->input_value);
 	close(device->device_fd);
 
 	return 0;

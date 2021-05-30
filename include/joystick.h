@@ -31,6 +31,9 @@ extern "C"{
 
 #define JOYSTICK_NAME_LENGTH 128
 
+#define JOYSTICK_AXIS_MAX 	32
+#define JOYSTICK_BUTTON_MAX 	32
+
 #ifdef JOYSTICK_LOG_FD
 extern FILE *joystick_log_fd;
 #endif 
@@ -52,8 +55,8 @@ struct joystick_input_requirement
 
 struct joystick_input_value
 {
-	float *joystick_axis_value;
-	int16_t *joystick_button_value;
+	float 	joystick_axis_value[JOYSTICK_AXIS_MAX];
+	int16_t joystick_button_value[JOYSTICK_BUTTON_MAX];
 }; 
 
 
@@ -91,7 +94,6 @@ uint32_t joystick_device_axis_count(struct joystick_device *device);
 int joystick_device_poll(struct joystick_device *device);
 
 
-int joystick_device_reopen(struct joystick_device *device, const char *device_path);
 
 
 /* 
@@ -121,6 +123,18 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 
 int joystick_device_open(struct joystick_device *device, const char *device_path);
 
+/* 
+ * Reopen joystick device. 
+ * 
+ * @param device joystick device that should be initialized. 
+ *
+ * @param device_path should be system path to ps3 controller. Usually /dev/input/*
+ * 
+ * @return Returns 0 on success. -1 on failure.
+ */
+
+
+int joystick_device_reopen(struct joystick_device *device, const char *device_path);
 /*
  * Destroy ps3 joystick device. 
  *
@@ -128,6 +142,7 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
  *
  * @return 0 on success. -1 on failure. 
  */
+
 int joystick_device_close(struct joystick_device *device);
 
 #ifdef __cplusplus
