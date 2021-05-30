@@ -90,6 +90,7 @@ int joystick_device_poll(struct joystick_device *device)
 
 			__u8 number = js_event_buffer[i].number;
 			__s16 value = js_event_buffer[i].value;
+
 			switch(js_event_buffer[i].type & ~JS_EVENT_INIT)
 			{
 

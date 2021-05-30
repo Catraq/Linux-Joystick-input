@@ -81,7 +81,7 @@ int main(int args, char *argv[])
 
 	
 	if((joystick_device_path == NULL) && (args < 2)){
-		fprintf(stdout, "Usage: %s ps3-dev-path \n", argv[0]);
+		fprintf(stdout, "Usage: %s joystick_device_path  \n", argv[0]);
 		exit(EXIT_FAILURE);
 	}else if(args == 2)
 	{
@@ -91,7 +91,7 @@ int main(int args, char *argv[])
 
 	result = joystick_device_open(&joystick_controller, joystick_device_path);
 	if(result < 0){
-		fprintf(stderr, "joystick_ps3_intialize(): error \n");
+		fprintf(stderr, "joystick_device_open(): error \n");
 		exit(EXIT_FAILURE);
 	}
 	else{
@@ -105,7 +105,7 @@ int main(int args, char *argv[])
 		
 		result = joystick_map_create(&joystick_controller_map, linear_inputs, outputs);
 		if(result < 0){
-			fprintf(stderr, "joystick_map_init(): error \n");
+			fprintf(stderr, "joystick_map_create(): error \n");
 			exit(EXIT_FAILURE);
 		}
 
@@ -118,14 +118,10 @@ int main(int args, char *argv[])
 			float output_channels[APP_INPUTS] = {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 			uint32_t output_channel_count = outputs;
 
-			result = joystick_map_mix(&joystick_controller_map, input_index, output_channels, output_channel_count);
-			if(result < 0)
-			{
-				fprintf(stderr, "joystick_map_mix(): error \n");
-				exit(EXIT_FAILURE);
-			}
+			joystick_map_transform(&joystick_controller_map, input_index, output_channels, output_channel_count);
 		}
 	}
+
 
 	while(1)
 	{
