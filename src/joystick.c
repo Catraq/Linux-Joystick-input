@@ -71,6 +71,7 @@ int joystick_device_poll(struct joystick_device *device)
 	result = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
 	if((result == -1)  && (errno != EAGAIN)){
 		close(device->device_fd);
+		device->device_fd = -1;
 		return -1;	
 	}
 	
@@ -367,6 +368,11 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 {
 	assert(device != NULL);
 	assert(device_path != NULL);
+
+	if(device->fd > 0)
+	{
+		return -1;	
+	}
 	
 	int result = 0;
 	memset(device, 0, sizeof(struct joystick_device));
@@ -391,7 +397,13 @@ int joystick_device_close(struct joystick_device *device)
 {
 	assert(device != NULL);
 
+	if(device->fd > 0)
+	{
+		return -1;	
+	}
+
 	close(device->device_fd);
+	device->device_fd = -1;
 
 	return 0;
 }
