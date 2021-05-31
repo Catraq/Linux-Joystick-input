@@ -122,35 +122,45 @@ int main(int args, char *argv[])
 		}
 	}
 
-
+	fd_set rfds;
 	while(1)
 	{
-		
-		clock_t time = clock();
-		float output[APP_INPUTS];
-		const uint32_t output_count = APP_INPUTS;
-		
+		FD_ZERO(&rfds);
+		FD_SET(joystick_controller.device_fd, &rfds);
 
-		result = joystick_device_poll(&joystick_controller);
-		if(result < 0){
-			result = joystick_device_reopen(&joystick_controller, joystick_device_path);
-			(void)result;
-		}
-		else if(result > 0)
+		struct timeval timeout = {.tv_sec = 1, .tv_usec = 0};
+		//result = select(1, &rfds, NULL, NULL, &timeout);
+		//if(result > 0)
 		{
-			joystick_map_translate(&joystick_controller_map, &joystick_controller, output, output_count);
-						
-#if 1
-			float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
-			printf("DT: %f :", dt);
+			clock_t time = clock();
+			float output[APP_INPUTS];
+			const uint32_t output_count = APP_INPUTS;
+			
 
-			for(int i = 0; i < APP_INPUTS; i++){
-				printf("%f,", output[i]); 
+			result = joystick_device_poll(&joystick_controller);
+			if(result < 0){
+				result = joystick_device_reopen(&joystick_controller, joystick_device_path);
+				(void)result;
 			}
-			printf("\n");
+			else if(result > 0)
+			{
+				joystick_map_translate(&joystick_controller_map, &joystick_controller, output, output_count);
+							
+#if 1
+				float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;
+				printf("DT: %f :", dt);
+
+				for(int i = 0; i < APP_INPUTS; i++){
+					printf("%f,", output[i]); 
+				}
+				printf("\n");
 
 #endif 
+			}
 		}
+		
+		//printf("%i \n", result);
+
 			
 
 	}
