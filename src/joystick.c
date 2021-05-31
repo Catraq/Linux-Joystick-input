@@ -70,6 +70,7 @@ int joystick_device_poll(struct joystick_device *device)
 	struct js_event js_event_buffer[JOYSTICK_EVENT_BUFFER_SIZE];
 	result = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
 	if((result == -1)  && (errno != EAGAIN)){
+		close(device->device_fd);
 		return -1;	
 	}
 	
@@ -138,36 +139,39 @@ static int joystick_open(const char *device_path, struct joystick_input_attrib *
 	
 	
 	if(ioctl(device_fd, JSIOCGAXES, &axis_count) < 0){
+		LOGE("ioctl(JSIOCGAXES): %s \n", strerror(errno));
 		goto exit;
 	}
 	
 	if(ioctl(device_fd, JSIOCGBUTTONS, &button_count) < 0){
-		
+		LOGE("ioctl(JSIOCGBUTTONS): %s \n", strerror(errno));
 		goto exit;
 	}
 	
 	/* Will be null termianted */	
 	if(ioctl(device_fd, JSIOCGNAME(JOYSTICK_NAME_LENGTH), name) < 0)
 	{
+		LOGE("ioctl(JSIOCGNAME): %s \n", strerror(errno));
 		goto exit;
 	}
 
 
 	if(axis_count > JOYSTICK_AXIS_MAX)
 	{
+		LOGW("maximum supported axises: %lu device axises: %lu ", (unsigned long int)JOYSTICK_AXIS_MAX, (unsigned long int)axis_count);
 		goto exit;
 	}
 
 	if(button_count > JOYSTICK_BUTTON_MAX)
 	{
+		LOGW("maximum supported buttons: %lu, device buttons: %lu ", (unsigned long int)JOYSTICK_BUTTON_MAX, (unsigned long int)button_count);
 		goto exit;
 	}
 
 	input_attrib->joystick_axis_count = axis_count;
 	input_attrib->joystick_button_count = button_count;
 
-	memcpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
-
+	strncpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
 
 	return device_fd;
 	
@@ -182,35 +186,38 @@ int joystick_device_reopen(struct joystick_device *device, const char *device_pa
 	assert(device_path != NULL);
 
 	int result = 0;
-	
-	/* Make sure it's actually is closed. */	
-	close(device->device_fd);
+
 	
 	/* Try to open the device and 
 	 * make sure that it is the same device. 
 	 */
 	
 	struct joystick_input_attrib input_attrib;
+	memset(&input_attrib, 0, sizeof(input_attrib));
+
 	result = joystick_open(device_path, &input_attrib);
 	if(result < 0){
 		return -1;
 	}
-	
-	result = memcmp(input_attrib.joystick_name, device->input_attrib.joystick_name, sizeof input_attrib.joystick_name);
+
+	result = strncmp(input_attrib.joystick_name, device->input_attrib.joystick_name, sizeof input_attrib.joystick_name);
 	if(result != 0){
+		joystick_device_close(device);
 		return -1;	
 	}
 
 	if(input_attrib.joystick_axis_count != device->input_attrib.joystick_axis_count){
+		joystick_device_close(device);
 		return -1;	
 	}
 
 	if(input_attrib.joystick_button_count != device->input_attrib.joystick_button_count){
+		joystick_device_close(device);
 		return -1;	
 	}
 
 
-	return 1;
+	return 0;
 }
 
 
@@ -236,9 +243,9 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 	struct dirent *dirent = NULL;
 	const char *dev_path = "/dev/input/";
 
-	LOGI("Finding joysticks in %s with requirements(", dev_path);
-	LOG_MSG("axis count=%lu, ", (long unsigned int)input_requirement->joystick_axis_count);
-	LOG_MSG("button count=%lu) \n", (long unsigned int)input_requirement->joystick_button_count);
+	long unsigned int axis_count = (long unsigned int)input_requirement->joystick_axis_count;
+	long unsigned int button_count = (long unsigned int)input_requirement->joystick_button_count;
+	LOGI("Finding joysticks in %s with requirements (Axis count=%lu, Button count=%lu) \n", dev_path, axis_count, button_count);
 
 
 
@@ -246,7 +253,7 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 
 	if(dir == NULL){
 		LOGE("Could not open directory %s. Error: %s ", dev_path, strerror(errno));
-		return joystick_device_found_index;
+		return 0;
 	}
 
 
@@ -267,6 +274,18 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 	 */
 	while((dirent = readdir(dir)) != NULL)
 	{
+
+		if(dirent->d_type != DT_CHR){
+			continue;
+		}
+		
+		/* jsN for devices with joystick driver */	
+		const char *joystick_device_name_ext = "js";
+		if(strstr(dirent->d_name, joystick_device_name_ext) == 0)
+		{
+			continue;	
+		}
+
 		/* 
 		 * Fill buffer with a complete path 
 		 * d_name is null terminated. 
@@ -302,9 +321,10 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 				 * If it matches the requirements 
 				 */
 				
-				LOGI("Name=%s, ", curr_input_attrib.joystick_name);
-				LOG_MSG("axis count=%lu, ", (long unsigned int)curr_input_attrib.joystick_axis_count);
-				LOG_MSG("button count=%lu \n", (long unsigned int)curr_input_attrib.joystick_button_count);
+				long unsigned int axis_count = (long unsigned int)curr_input_attrib.joystick_axis_count;
+				long unsigned int button_count = (long unsigned int)curr_input_attrib.joystick_button_count;
+				LOGI("Found joystick in %s with (Axis count=%lu, Button count=%lu) \n", curr_input_attrib.joystick_name, axis_count, button_count);
+
 
 
 				if((input_requirement->joystick_axis_count <= curr_input_attrib.joystick_axis_count) &&
@@ -348,7 +368,6 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 	assert(device != NULL);
 	assert(device_path != NULL);
 	
-		
 	int result = 0;
 	memset(device, 0, sizeof(struct joystick_device));
 	
@@ -357,7 +376,6 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 	 */
 
 	device->device_fd = joystick_open(device_path, &device->input_attrib);
-
 	
 	if(device->device_fd < 0){
 		return -1;	
@@ -366,18 +384,13 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 	memset(&device->input_value, 0, sizeof device->input_value);
 
 	return 0;
-
-error:
-	close(device->device_fd);
-
-	return -1;
 }
 
 
 int joystick_device_close(struct joystick_device *device)
 {
 	assert(device != NULL);
-	
+
 	close(device->device_fd);
 
 	return 0;

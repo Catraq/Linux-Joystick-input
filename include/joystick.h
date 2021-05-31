@@ -1,16 +1,13 @@
-/*TODO:
- *	- Different errors depending on error. Etc disconnected or out of memory. 
- */
-
-
 /*
  * Decription:
  * 	Used for finding joystick devices satisfying certain requirements.
  * 	Open and read the joystick device. 
- * Notes
+ * Notes:
  *	- Uninitialized means that the structure/data is zeroed out using etc. memset. 
- * Error 
- * 	If malloc fails. 
+ * 	- Any return value less than 0 indicates that there have been a error and the 
+ *	  file descriptor have been closed. Use reopen for same device or open for any
+ *	  new device. 
+ * Error:
  * 	Assert on logical error. 
  */
 
