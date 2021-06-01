@@ -2,13 +2,15 @@
 
 Library for reading joystick input and mapping the input to output suitable for the application. 
 
-The input is fetched from the kernel joystick driver. The axis values are then mapped to outputs using a linear matrix, making mixing of the inputs straight forward.  
-Can be used without linear map. 
+The input is fetched from the kernel joystick driver. The axis values are then mapped to outputs using a linear matrix, making mixing of the inputs straight forward. There are support for picking a joystick input by requirements on number of axises and buttons.    
 
-See test/joystick.c for example.  
+See test/test.c for example.  
 
+## Quick start 
 mkdir build
 cd build
 cmake ..
 make 
-./test /dev/input/js0 
+./test
+or 
+./test /dev/input/js0
