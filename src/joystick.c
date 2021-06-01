@@ -130,9 +130,7 @@ static int joystick_open(const char *device_path, struct joystick_input_attrib *
 	int device_fd = -1;
 
 
-	//device_fd = open(device_path, O_RDONLY | O_NONBLOCK);
-
-	device_fd = open(device_path, O_RDONLY);
+	device_fd = open(device_path, O_RDONLY | O_NONBLOCK);
 	if(device_fd < 0){
 		return -1;
 	}
