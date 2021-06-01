@@ -46,8 +46,11 @@ struct joystick_input_attrib
 
 struct joystick_input_requirement 
 {
-	uint8_t joystick_axis_count;
-	uint8_t joystick_button_count;
+	uint8_t requirement_axis_count_min;
+	uint8_t requirement_button_count_min;
+
+	uint8_t requirement_axis_count_max;
+	uint8_t requirement_button_count_max;
 };
 
 struct joystick_input_value

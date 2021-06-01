@@ -44,8 +44,11 @@ static struct joystick_map joystick_controller_map;
  */
 
 static struct joystick_input_requirement joystick_input_req = {
-	.joystick_axis_count = APP_INPUT_AXIS_REQ,
-	.joystick_button_count = APP_INPUT_BUTTON_REQ,
+	.requirement_axis_count_min = APP_INPUT_AXIS_REQ,
+	.requirement_button_count_min = APP_INPUT_BUTTON_REQ,
+	.requirement_axis_count_max = JOYSTICK_AXIS_MAX,
+	.requirement_button_count_max = JOYSTICK_BUTTON_MAX,
+
 };
 
 int main(int args, char *argv[])
@@ -103,11 +106,7 @@ int main(int args, char *argv[])
 		const uint32_t outputs = APP_INPUTS;
 
 		
-		result = joystick_map_create(&joystick_controller_map, linear_inputs, outputs);
-		if(result < 0){
-			fprintf(stderr, "joystick_map_create(): error \n");
-			exit(EXIT_FAILURE);
-		}
+		joystick_map_create(&joystick_controller_map, linear_inputs, outputs);
 
 		/*
 		 * Assing input index 0 to output index 1,4,5,6

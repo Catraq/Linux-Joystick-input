@@ -77,7 +77,7 @@ struct joystick_map
  * or JOYSTICK_MAP_OUTPUT_MAX. 
  */
 
-int joystick_map_create(struct joystick_map * const map, const uint32_t input_count, const uint32_t output_count);
+void joystick_map_create(struct joystick_map * const map, const uint32_t input_count, const uint32_t output_count);
 void joystick_map_destroy(struct joystick_map * const map);
 
 

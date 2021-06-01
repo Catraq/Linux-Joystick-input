@@ -8,26 +8,17 @@
 #include "joystick_map.h"
 
 
-int joystick_map_create(struct joystick_map * const map, const uint32_t input_count, const uint32_t output_count)
+void joystick_map_create(struct joystick_map * const map, const uint32_t input_count, const uint32_t output_count)
 {
 	assert(map != NULL);
-	
-	if((input_count <= 0) && (input_count > JOYSTICK_MAP_INPUT_MAX))
-	{
-		return -1;	
-	}	
-	
-	if((output_count <= 0) && (output_count > JOYSTICK_MAP_OUTPUT_MAX))
-	{
-		return -1;	
-	}	
+	assert(input_count <= JOYSTICK_MAP_INPUT_MAX);
+	assert(output_count <= JOYSTICK_MAP_OUTPUT_MAX);
 
 	memset(map, 0, sizeof(struct joystick_map));	
 
 	map->map_output_count = output_count;
 	map->map_input_count = input_count;
 	
-	return 0;
 }
 
 void joystick_map_destroy(struct joystick_map * const map)

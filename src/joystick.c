@@ -244,8 +244,8 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 	struct dirent *dirent = NULL;
 	const char *dev_path = "/dev/input/";
 
-	long unsigned int axis_count = (long unsigned int)input_requirement->joystick_axis_count;
-	long unsigned int button_count = (long unsigned int)input_requirement->joystick_button_count;
+	long unsigned int axis_count = (long unsigned int)input_requirement->requirement_axis_count_min;
+	long unsigned int button_count = (long unsigned int)input_requirement->requirement_button_count_min;
 	LOGI("Finding joysticks in %s with requirements (Axis count=%lu, Button count=%lu) \n", dev_path, axis_count, button_count);
 
 
@@ -327,18 +327,36 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 				LOGI("Found joystick in %s with (Axis count=%lu, Button count=%lu) \n", curr_input_attrib.joystick_name, axis_count, button_count);
 
 
-
-				if((input_requirement->joystick_axis_count <= curr_input_attrib.joystick_axis_count) &&
-					       (input_requirement->joystick_button_count <= curr_input_attrib.joystick_button_count))
+				if(input_requirement->requirement_axis_count_min > curr_input_attrib.joystick_axis_count)
 				{
+					continue;	
+				}
 
+				if(input_requirement->requirement_axis_count_max < curr_input_attrib.joystick_axis_count)
+				{
+					continue;	
+				}
+
+
+				if(input_requirement->requirement_button_count_min > curr_input_attrib.joystick_button_count)
+				{
+					continue;	
+				}
+
+				if(input_requirement->requirement_button_count_max < curr_input_attrib.joystick_button_count)
+				{
+					continue;	
+				}
+
+
+
+				{
 					struct joystick_input_attrib *attrib = &input_attrib[joystick_device_found_index];
 
 					/* 
 					 * Copy found attributes. 
 					 */		
 					memcpy(attrib, &curr_input_attrib, sizeof(curr_input_attrib));
-
 					memcpy(attrib->joystick_device_path, full_file_path, PATH_MAX);
 					
 					/* 
