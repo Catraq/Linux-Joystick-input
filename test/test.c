@@ -88,11 +88,11 @@ int main(int args, char *argv[])
 		exit(EXIT_FAILURE);
 	}else if(args == 2)
 	{
-		joystick_device_path = argv[2];
+		joystick_device_path = argv[1];
 	}
 
 
-	result = joystick_device_open(&joystick_controller, joystick_device_path);
+	result = joystick_device_open(&joystick_controller, &joystick_input_req, joystick_device_path);
 	if(result < 0){
 		fprintf(stderr, "joystick_device_open(): error \n");
 		exit(EXIT_FAILURE);

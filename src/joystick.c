@@ -380,10 +380,11 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 
 
 
-int joystick_device_open(struct joystick_device *device, const char *device_path)
+int joystick_device_open(struct joystick_device *device, struct joystick_input_requirement *input_requirement, const char *device_path)
 {
 	assert(device != NULL);
 	assert(device_path != NULL);
+	assert(input_requirement != NULL);	
 	
 	int result = 0;
 	memset(device, 0, sizeof(struct joystick_device));
@@ -398,9 +399,35 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 		return -1;	
 	}
 
+	if(input_requirement->requirement_axis_count_min > device->input_attrib.joystick_axis_count)
+	{
+		goto exit_failure;
+	}
+
+	if(input_requirement->requirement_axis_count_max < device->input_attrib.joystick_axis_count)
+	{
+		goto exit_failure;
+	}
+
+
+	if(input_requirement->requirement_button_count_min > device->input_attrib.joystick_button_count)
+	{
+		goto exit_failure;
+	}
+
+	if(input_requirement->requirement_button_count_max < device->input_attrib.joystick_button_count)
+	{
+		goto exit_failure;
+	}
+
 	memset(&device->input_value, 0, sizeof device->input_value);
 
 	return 0;
+
+exit_failure:
+
+	close(device->device_fd);
+	return -1;
 }
 
 
