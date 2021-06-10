@@ -56,7 +56,7 @@ int main(int args, char *argv[])
 	joystick_log_tag = stdout;
 
 	int result = 0;
-	const char *joystick_device_path = NULL;
+	char *joystick_device_path = NULL;
 
 	/* 
 	 * If no joystick path is passed from command line, then 
@@ -76,7 +76,7 @@ int main(int args, char *argv[])
 			fprintf(stderr, "Could not find any joystick device \n");		
 		}else
 		{
-			joystick_device_path = input_attrib_list[0].joystick_device_path;
+			joystick_device_path = (char *)input_attrib_list[0].joystick_device_path;
 			joystick_input_attrib_print(&input_attrib_list[0],stdout);
 		}
 

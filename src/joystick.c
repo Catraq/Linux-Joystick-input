@@ -65,26 +65,25 @@ int joystick_device_poll(struct joystick_device *device)
 {
 	assert(device != NULL);
 
-	int result = 0;
 		
 	struct js_event js_event_buffer[JOYSTICK_EVENT_BUFFER_SIZE];
-	result = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
-	if((result == -1)  && (errno != EAGAIN)){
+	ssize_t bytes_read = read(device->device_fd, js_event_buffer, sizeof js_event_buffer);
+	if((bytes_read < 0)  && (errno != EAGAIN)){
 		close(device->device_fd);
 		device->device_fd = -1;
 		return -1;	
 	}
 	
-	const uint32_t buffer_size_verify = result%sizeof(struct js_event); 
+	const uint32_t buffer_size_verify = ((size_t)bytes_read)%sizeof(struct js_event); 
 	if(buffer_size_verify == 0)
 	{
 
-		const uint32_t buffer_size = result/sizeof(struct js_event); 
+		const size_t buffer_size = ((size_t)bytes_read)/sizeof(struct js_event); 
 
 		const int16_t joystick_axis_count = device->input_attrib.joystick_axis_count;
 		const int16_t joystick_button_count = device->input_attrib.joystick_button_count;
 
-		for(int i = 0; i < buffer_size; i++)
+		for(size_t i = 0; i < buffer_size; i++)
 		{
 			/*
 			 * Read event and write to input buffer
@@ -170,7 +169,7 @@ static int joystick_open(const char *device_path, struct joystick_input_attrib *
 	input_attrib->joystick_axis_count = axis_count;
 	input_attrib->joystick_button_count = button_count;
 
-	strncpy(input_attrib->joystick_name, name, sizeof(input_attrib->joystick_name));
+	strncpy((char *)input_attrib->joystick_name, (char *)name, sizeof(input_attrib->joystick_name));
 
 	return device_fd;
 	
@@ -186,6 +185,12 @@ int joystick_device_reopen(struct joystick_device *device, const char *device_pa
 
 	int result = 0;
 
+		
+	if(device->device_fd != -1)
+	{
+		return 0;	
+	}
+	
 	
 	/* Try to open the device and 
 	 * make sure that it is the same device. 
@@ -194,13 +199,13 @@ int joystick_device_reopen(struct joystick_device *device, const char *device_pa
 	struct joystick_input_attrib input_attrib;
 	memset(&input_attrib, 0, sizeof(input_attrib));
 
-	result = joystick_open(device_path, &input_attrib);
-	if(result < 0){
+	device->device_fd = joystick_open(device_path, &input_attrib);
+	if(device->device_fd < 0){
 		return -1;
 	}
 
-	joystick_input_attrib_print(&input_attrib, stdout);
-	result = strncmp(input_attrib.joystick_name, device->input_attrib.joystick_name, sizeof input_attrib.joystick_name);
+
+	result = strncmp((const char *)input_attrib.joystick_name, (const char *)device->input_attrib.joystick_name, sizeof input_attrib.joystick_name);
 	if(result != 0){
 		joystick_device_close(device);
 		return -1;	
@@ -292,7 +297,7 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 		 */
 
 		char *filename = dirent->d_name;	
-		size_t filename_length = strlen(dev_path);
+		size_t filename_length = strlen(filename);
 		size_t filename_last_index = filename_length + dev_path_length;
 
 

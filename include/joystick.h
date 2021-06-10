@@ -116,7 +116,7 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
  * 
  * @param device joystick device that should be initialized. 
  *
- * @param device_path should be system path to ps3 controller. Usually /dev/input/*
+ * @param device_path should be system path to ps3 controller. Usually /dev/input
  * 
  * @param input_requirement should be initialized with the applciation requirements. The min attributes can be 0 and max should reflect the limitations in inputs buffers. 
  * 
@@ -130,7 +130,7 @@ int joystick_device_open(struct joystick_device *device, struct joystick_input_r
  * 
  * @param device joystick device that should be initialized. 
  *
- * @param device_path should be system path to ps3 controller. Usually /dev/input/*
+ * @param device_path should be system path to ps3 controller. Usually /dev/input
  * 
  * @return Returns 0 on success. -1 on failure.
  */

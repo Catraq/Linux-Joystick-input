@@ -23,7 +23,7 @@ void joystick_map_create(struct joystick_map * const map, const uint32_t input_c
 
 void joystick_map_destroy(struct joystick_map * const map)
 {
-
+	assert(map != NULL);
 }
 
 
@@ -74,6 +74,9 @@ void joystick_map_translate(struct joystick_map * const map, struct joystick_dev
 
 void joystick_map_print(struct joystick_map * const map, FILE * const output)
 {
+	assert(map != NULL);
+	assert(output != NULL);
+
 	/* 
 	 * Inner is column and outer is row.
 	 */
