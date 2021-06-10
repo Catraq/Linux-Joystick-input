@@ -222,7 +222,7 @@ int joystick_device_reopen(struct joystick_device *device, const char *device_pa
 	}
 
 
-	return 0;
+	return 1;
 }
 
 
