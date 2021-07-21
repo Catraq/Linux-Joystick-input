@@ -229,7 +229,7 @@ joystick_device_reopen(struct joystick_device *device)
 	}
 
 
-	return 0;
+	return 1;
 }
 
 
