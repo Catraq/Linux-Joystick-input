@@ -129,7 +129,7 @@ int main(int args, char *argv[])
 
 		result = joystick_device_poll(&joystick_controller);
 		if(result < 0){
-			result = joystick_device_reopen(&joystick_controller, joystick_device_path);
+			result = joystick_device_reopen(&joystick_controller);
 			(void)result;
 		}
 		else if(result > 0)

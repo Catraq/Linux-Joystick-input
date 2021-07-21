@@ -171,6 +171,10 @@ static int joystick_open(const char *device_path, struct joystick_input_attrib *
 
 	strncpy((char *)input_attrib->joystick_name, (char *)name, sizeof(input_attrib->joystick_name));
 
+	/* +1 for NULL */
+	size_t device_path_len = strlen(device_path) + 1;
+	strncpy((char *)input_attrib->joystick_device_path, (char *)device_path, device_path_len);
+
 	return device_fd;
 	
 exit:
@@ -178,10 +182,10 @@ exit:
 	return -1;
 }
 
-int joystick_device_reopen(struct joystick_device *device, const char *device_path)
+int 
+joystick_device_reopen(struct joystick_device *device)
 {
 	assert(device != NULL);
-	assert(device_path != NULL);
 
 	int result = 0;
 
@@ -192,14 +196,17 @@ int joystick_device_reopen(struct joystick_device *device, const char *device_pa
 	}
 	
 	
-	/* Try to open the device and 
+	/*
+	 * Try to open the device and 
 	 * make sure that it is the same device. 
 	 */
 	
+	uint8_t *device_path = device->input_attrib.joystick_device_path;
+
 	struct joystick_input_attrib input_attrib;
 	memset(&input_attrib, 0, sizeof(input_attrib));
 
-	device->device_fd = joystick_open(device_path, &input_attrib);
+	device->device_fd = joystick_open((const char *)device_path, &input_attrib);
 	if(device->device_fd < 0){
 		return -1;
 	}

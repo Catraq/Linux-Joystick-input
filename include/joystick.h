@@ -130,13 +130,12 @@ int joystick_device_open(struct joystick_device *device, struct joystick_input_r
  * 
  * @param device joystick device that should be initialized. 
  *
- * @param device_path should be system path to ps3 controller. Usually /dev/input
- * 
  * @return Returns 0 on success. -1 on failure.
  */
 
 
-int joystick_device_reopen(struct joystick_device *device, const char *device_path);
+int joystick_device_reopen(struct joystick_device *device);
+
 /*
  * Destroy ps3 joystick device. 
  *
