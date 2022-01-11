@@ -81,6 +81,7 @@ void joystick_input_attrib_print(struct joystick_input_attrib *input_attrib, FIL
  */
 uint32_t joystick_device_axis_count(struct joystick_device *device);
 
+
 /* 
  * Poll new values into value. 
  *
@@ -110,6 +111,19 @@ int joystick_device_poll(struct joystick_device *device);
  */
 
 size_t joystick_device_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
+
+
+/* 
+ * Check if joystick is open
+ * 
+ * @param device joystick device that should be initialized. 
+ *
+ * @return Returns 1 if open, else -1 
+ */
+
+int joystick_device_is_open(struct joystick_device *device);
+
+
 
 /* 
  * Initialize joystick device.  

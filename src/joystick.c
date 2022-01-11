@@ -61,6 +61,13 @@ uint32_t joystick_device_axis_count(struct joystick_device *device)
 }
 
 
+int joystick_device_is_open(struct joystick_device *device)
+{
+	assert(device != NULL);
+
+	return device->device_fd < 0 ? -1 : 1;
+}
+
 int joystick_device_poll(struct joystick_device *device)
 {
 	assert(device != NULL);
