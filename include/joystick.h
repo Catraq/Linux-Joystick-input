@@ -114,6 +114,21 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 
 
 /* 
+ * Used for identifying joystick devices that satisfys some requirements. Same as 
+ * joystick_device_identify_by_requirement but with input_requirment set to max 
+ * supported. 
+ *
+ * @param input_attrib will be filled with the results. 
+ *
+ * @param input_attrib_max maxium elements input_attrib fits. 
+ *
+ * @return returns 0 if no devices are found. Otherwise number of devices found. 
+ *
+ */
+size_t joystick_device_identify(struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
+
+
+/* 
  * Check if joystick is open
  * 
  * @param device joystick device that should be initialized. 
@@ -132,12 +147,11 @@ int joystick_device_is_open(struct joystick_device *device);
  *
  * @param device_path should be system path to ps3 controller. Usually /dev/input
  * 
- * @param input_requirement should be initialized with the applciation requirements. The min attributes can be 0 and max should reflect the limitations in inputs buffers. 
  * 
  * @return Returns 0 on success. -1 on failure.
  */
 
-int joystick_device_open(struct joystick_device *device, struct joystick_input_requirement *input_requirement, const char *device_path);
+int joystick_device_open(struct joystick_device *device, const char *device_path);
 
 /* 
  * Reopen joystick device. 

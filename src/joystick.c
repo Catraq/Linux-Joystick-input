@@ -22,7 +22,8 @@
 
 
 
-int joystick_device_close(struct joystick_device *device)
+int 
+joystick_device_close(struct joystick_device *device)
 {
 	assert(device != NULL);
 
@@ -168,7 +169,7 @@ static int joystick_open(const char *device_path, struct joystick_input_attrib *
 
 	/* +1 for NULL */
 	size_t device_path_len = strlen(device_path) + 1;
-	strncpy((char *)input_attrib->joystick_device_path, (char *)device_path, device_path_len);
+	memcpy((char *)input_attrib->joystick_device_path, (char *)device_path, device_path_len);
 
 	return device_fd;
 	
@@ -373,13 +374,26 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 	return joystick_device_found_index;
 }
 
+size_t joystick_device_identify(struct joystick_input_attrib *input_attrib, size_t input_attrib_max)
+{
+
+	struct joystick_input_requirement joystick_input_req = {
+		.requirement_axis_count_min = 0,
+		.requirement_button_count_min = 0,
+		.requirement_axis_count_max = JOYSTICK_AXIS_MAX,
+		.requirement_button_count_max = JOYSTICK_BUTTON_MAX,
+
+	};
+
+	return joystick_device_identify_by_requirement(&joystick_input_req, input_attrib, input_attrib_max);
+}
 
 
-int joystick_device_open(struct joystick_device *device, struct joystick_input_requirement *input_requirement, const char *device_path)
+
+int joystick_device_open(struct joystick_device *device, const char *device_path)
 {
 	assert(device != NULL);
 	assert(device_path != NULL);
-	assert(input_requirement != NULL);	
 	
 	/* 
 	 * Open device and get attributes.
@@ -391,35 +405,9 @@ int joystick_device_open(struct joystick_device *device, struct joystick_input_r
 		return -1;	
 	}
 
-	if(input_requirement->requirement_axis_count_min > device->input_attrib.joystick_axis_count)
-	{
-		goto exit_failure;
-	}
-
-	if(input_requirement->requirement_axis_count_max < device->input_attrib.joystick_axis_count)
-	{
-		goto exit_failure;
-	}
-
-
-	if(input_requirement->requirement_button_count_min > device->input_attrib.joystick_button_count)
-	{
-		goto exit_failure;
-	}
-
-	if(input_requirement->requirement_button_count_max < device->input_attrib.joystick_button_count)
-	{
-		goto exit_failure;
-	}
-
 	memset(&device->input_value, 0, sizeof device->input_value);
 
 	return 0;
-
-exit_failure:
-
-	close(device->device_fd);
-	return -1;
 }
 
 
