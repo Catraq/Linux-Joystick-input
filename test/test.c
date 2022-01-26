@@ -120,21 +120,22 @@ int main(int args, char *argv[])
 		}
 	}
 
+	struct joystick_input_value input_value;
 	while(1)
 	{
 		clock_t time = clock();
 		float output[APP_INPUTS];
 		const uint32_t output_count = APP_INPUTS;
 		
-
-		result = joystick_device_poll(&joystick_controller);
+		
+		result = joystick_device_poll(&joystick_controller, &input_value);
 		if(result < 0){
 			result = joystick_device_reopen(&joystick_controller);
 			(void)result;
 		}
 		else if(result > 0)
 		{
-			joystick_map_translate(&joystick_controller_map, &joystick_controller, output, output_count);
+			joystick_map_translate(&joystick_controller_map, &input_value, output, output_count);
 						
 #if 1
 			float dt = (float)(clock() - time)/(float)CLOCKS_PER_SEC;

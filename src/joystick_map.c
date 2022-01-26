@@ -44,14 +44,14 @@ void joystick_map_transform(struct joystick_map * const map, const uint32_t inpu
 
 }
 
-void joystick_map_translate(struct joystick_map * const map, struct joystick_device *device,  float * const output, const uint32_t output_length)
+void joystick_map_translate(struct joystick_map * const map, struct joystick_input_value *input_value,  float * const output, const uint32_t output_length)
 {
 	assert(map != NULL);
 	assert(output != NULL);
 		
 	assert(output_length == map->map_output_count);
 
-	float *input = device->input_value.joystick_axis_value;	
+	float *input = input_value->joystick_axis_value;	
 
 	/*
 	 * Matrix vector mul. Ax = b

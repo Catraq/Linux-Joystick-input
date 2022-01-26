@@ -83,7 +83,7 @@ void joystick_map_destroy(struct joystick_map * const map);
 
 void joystick_map_transform(struct joystick_map * const map, const uint32_t input_index, const float *output_scale, const uint32_t output_scale_count);
 
-void joystick_map_translate(struct joystick_map * const map, struct joystick_device *device,  float * const output, const uint32_t output_length);
+void joystick_map_translate(struct joystick_map * const map, struct joystick_input_value *input_value,  float * const output, const uint32_t output_length);
 
 
 void joystick_map_print(struct joystick_map * const map, FILE * const output);

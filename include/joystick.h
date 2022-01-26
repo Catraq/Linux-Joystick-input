@@ -63,9 +63,8 @@ struct joystick_input_value
 struct joystick_device
 {
 	int device_fd;
-
 	struct joystick_input_attrib input_attrib;
-	struct joystick_input_value input_value;
+	//struct joystick_input_value input_value;
 };
 
 
@@ -92,7 +91,21 @@ uint32_t joystick_device_axis_count(struct joystick_device *device);
  * @return Returns 1 if there are new values, 0 on nothing, but success. -1 on failure. 
  */
 
-int joystick_device_poll(struct joystick_device *device);
+int joystick_device_poll(struct joystick_device *device, struct joystick_input_value *input_value);
+
+
+/* 
+ * Used for identifying joystick devices 
+ *
+ * @param input_attrib will be filled with the results. 
+ *
+ * @param input_attrib_max maxium elements input_attrib fits. 
+ *
+ * @return returns 0 if no devices are found. Otherwise number of devices found. 
+ *
+ */
+
+size_t joystick_device_identify(struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
 
 
 
@@ -111,21 +124,6 @@ int joystick_device_poll(struct joystick_device *device);
  */
 
 size_t joystick_device_identify_by_requirement(struct joystick_input_requirement *input_requirement, struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
-
-
-/* 
- * Used for identifying joystick devices that satisfys some requirements. Same as 
- * joystick_device_identify_by_requirement but with input_requirment set to max 
- * supported. 
- *
- * @param input_attrib will be filled with the results. 
- *
- * @param input_attrib_max maxium elements input_attrib fits. 
- *
- * @return returns 0 if no devices are found. Otherwise number of devices found. 
- *
- */
-size_t joystick_device_identify(struct joystick_input_attrib *input_attrib, size_t input_attrib_max);
 
 
 /* 

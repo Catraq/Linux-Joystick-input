@@ -26,7 +26,7 @@ int
 joystick_device_close(struct joystick_device *device)
 {
 	assert(device != NULL);
-
+	
 	close(device->device_fd);
 	device->device_fd = -1;
 
@@ -62,9 +62,10 @@ int joystick_device_is_open(struct joystick_device *device)
 	return device->device_fd <= 0 ? -1 : 1;
 }
 
-int joystick_device_poll(struct joystick_device *device)
+int joystick_device_poll(struct joystick_device *device, struct joystick_input_value *input_value)
 {
 	assert(device != NULL);
+	assert(input_value != NULL);
 
 	
 	struct js_event js_event_buffer[JOYSTICK_EVENT_BUFFER_SIZE];
@@ -99,16 +100,15 @@ int joystick_device_poll(struct joystick_device *device)
 
 				case JS_EVENT_AXIS:
 					if(number < joystick_axis_count){
-
 						/* Map INT16_T range to float [-1, 1] */
 						float mapped = ((float)value)/((float)INT16_MAX);
-						device->input_value.joystick_axis_value[number] = mapped;
+						input_value->joystick_axis_value[number] = mapped;
 					}
 				break;	
 
 				case JS_EVENT_BUTTON:
 					if(number < joystick_button_count){
-						device->input_value.joystick_button_value[number] = value;
+						input_value->joystick_button_value[number] = value;
 					}
 				break;	
 			}
@@ -258,7 +258,6 @@ size_t joystick_device_identify_by_requirement(struct joystick_input_requirement
 		return 0;
 	}
 
-
 	
 	/*
 	 * 	Write dev path to buffer without terminating zero. 
@@ -404,8 +403,6 @@ int joystick_device_open(struct joystick_device *device, const char *device_path
 	if(device->device_fd < 0){
 		return -1;	
 	}
-
-	memset(&device->input_value, 0, sizeof device->input_value);
 
 	return 0;
 }
